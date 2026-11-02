@@ -8,7 +8,7 @@ import yfinance as yf
 
 # Page Configuration
 st.set_page_config(
-    page_title="StumpMetrics: Cricket Intelligence", page_icon="🏏", layout="wide"
+    page_title="StumpMetrics: Player Intelligence", page_icon="🏏", layout="wide"
 )
 
 # Auto-refresh live feed every 60 seconds
@@ -20,13 +20,10 @@ count = st_autorefresh(interval=60000, limit=None, key="cricket_live_feed")
 st.markdown(
     """
     <style>
-    /* Global Dark Theme Background */
     .stApp {
         background-color: #0b0f19;
         color: #f3f4f6;
     }
-    
-    /* Metric Cards Styling with Neon Glow */
     div[data-testid="stMetric"] {
         background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
         border: 1px solid #374151;
@@ -45,8 +42,6 @@ st.markdown(
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #00f5ff !important;
     }
-
-    /* Tabs Styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: #111827;
@@ -64,8 +59,6 @@ st.markdown(
         background: linear-gradient(135deg, #00f5ff 0%, #3b82f6 100%) !important;
         color: #0b0f19 !important;
     }
-
-    /* Headers */
     h1, h2, h3 {
         color: #ffffff;
         font-family: 'Inter', sans-serif;
@@ -77,7 +70,7 @@ st.markdown(
 
 
 # ==========================================
-# CRICKET ANALYTICS RELATIONAL DATABASE (AUTO-SCHEMA MIGRATION)
+# DATABASE INITIALIZATION & AUTO-MIGRATION
 # ==========================================
 def init_cricket_db():
   conn = sqlite3.connect("stump_metrics.db")
@@ -101,10 +94,8 @@ def init_cricket_db():
         )
     """)
 
-  # Migration logic: Ensure existing tables get 'fours' and 'sixes' columns
   cursor.execute("PRAGMA table_info(player_match_logs)")
   existing_cols = [col[1] for col in cursor.fetchall()]
-  
   if "fours" not in existing_cols:
     cursor.execute("ALTER TABLE player_match_logs ADD COLUMN fours INTEGER DEFAULT 0")
   if "sixes" not in existing_cols:
@@ -112,63 +103,43 @@ def init_cricket_db():
 
   cursor.execute("SELECT COUNT(*) FROM player_match_logs")
   if cursor.fetchone()[0] == 0:
-    test_nations = [
+    test_nations_roster = [
         ("Virat Kohli", "India", "ODI"),
         ("Kane Williamson", "New Zealand", "Test"),
         ("Joe Root", "England", "Test"),
         ("Babar Azam", "Pakistan", "ODI"),
         ("Steve Smith", "Australia", "Test"),
-        ("Temba Bavuma", "South Africa", "Test"),
         ("Shakib Al Hasan", "Bangladesh", "T20I"),
-        ("Angelo Mathews", "Sri Lanka", "Test"),
-        ("Nicholas Pooran", "West Indies", "T20I"),
-        ("Rashid Khan", "Afghanistan", "T20I"),
-        ("Harry Tector", "Ireland", "ODI"),
-        ("Craig Ervine", "Zimbabwe", "ODI"),
         ("Jasprit Bumrah", "India", "Test"),
-        ("Pat Cummins", "Australia", "Test"),
-        ("Shaheen Afridi", "Pakistan", "T20I"),
-        ("Trent Boult", "New Zealand", "ODI"),
+        ("Rashid Khan", "Afghanistan", "T20I"),
     ]
 
-    all_teams = [
-        "India", "Australia", "England", "Pakistan", "South Africa",
-        "New Zealand", "Sri Lanka", "Bangladesh", "West Indies",
-        "Afghanistan", "Ireland", "Zimbabwe"
-    ]
-
-    base_date = datetime.now() - timedelta(days=45)
+    all_teams = ["India", "Australia", "England", "Pakistan", "New Zealand", "Bangladesh", "South Africa", "Afghanistan"]
+    base_date = datetime.now() - timedelta(days=60)
     records = []
 
-    for i in range(1, 150):
+    for i in range(1, 160):
       m_id = f"MATCH-2026-{i:03d}"
-      player, team, fmt = random.choice(test_nations)
+      player, team, fmt = random.choice(test_nations_roster)
       opposition = random.choice([t for t in all_teams if t != team])
 
-      runs = random.randint(0, 140) if fmt != "Test" else random.randint(10, 210)
+      runs = random.randint(0, 140) if fmt != "Test" else random.randint(12, 215)
       balls = max(1, int(runs * random.uniform(0.65, 1.35)))
       fours = max(0, int(runs * random.uniform(0.1, 0.25) / 4))
       sixes = max(0, int(runs * random.uniform(0.02, 0.1) / 6))
-      wickets = (
-          random.randint(0, 5)
-          if any(b in player for b in ["Bumrah", "Cummins", "Afridi", "Boult"])
-          else random.randint(0, 2)
-      )
+      wickets = random.randint(0, 5) if "Bumrah" in player or "Rashid" in player else random.randint(0, 2)
       economy = round(random.uniform(3.8, 8.9), 2)
 
       strike_rate = (runs / balls) * 100
       if strike_rate > 150 or runs > 100:
-        status = "🔥 Elite Outlier (Match Winner)"
-      elif strike_rate < 50 and runs < 12:
-        status = "⚠️ Performance Slump (Review)"
+        status = "🔥 Elite Match-Winning Knock"
+      elif strike_rate < 50 and runs < 10:
+        status = "⚠️ Slump / Low Conversion"
       else:
-        status = "✅ Baseline Standard"
+        status = "✅ Stable Baseline"
 
-      m_date = (base_date + timedelta(days=i * 0.3)).strftime("%Y-%m-%d")
-      records.append((
-          m_id, player, team, opposition, fmt, runs, balls, fours, sixes,
-          wickets, economy, status, m_date,
-      ))
+      m_date = (base_date + timedelta(days=i * 0.4)).strftime("%Y-%m-%d")
+      records.append((m_id, player, team, opposition, fmt, runs, balls, fours, sixes, wickets, economy, status, m_date))
 
     cursor.executemany(
         """
@@ -191,11 +162,6 @@ def load_cricket_data():
   df = pd.read_sql_query("SELECT * FROM player_match_logs", conn)
   conn.close()
   df["match_date"] = pd.to_datetime(df["match_date"])
-  # Fill NaN values for fours/sixes if any nulls exist from old rows
-  if "fours" in df.columns:
-    df["fours"] = df["fours"].fillna(0)
-  if "sixes" in df.columns:
-    df["sixes"] = df["sixes"].fillna(0)
   return df
 
 
@@ -215,192 +181,135 @@ def fetch_live_market_stream():
 market_data = fetch_live_market_stream()
 
 # ==========================================
-# DASHBOARD HEADER & SIDEBAR CONTROLS
+# DASHBOARD HEADER & PLAYER-CENTRIC SIDEBAR
 # ==========================================
-st.title("🏏 StumpMetrics: Cricket Analytics & Intelligence Suite")
+st.title("🏏 StumpMetrics: Player Intelligence & Career Analytics")
 st.markdown(
-    "**End-to-End Data Analyst Portfolio Project** | Relational SQL Database,"
-    " Multi-Nation Filtering, Boundary Efficiency Index & Automated Outlier"
-    " Detection."
+    "**Player-Centric Data Intelligence Platform** | Deep-Dive SQL Career Logs, Individual Form Tracking, & Performance Outliers."
 )
 st.markdown("---")
 
-st.sidebar.header("🌐 Global Filters")
-all_test_nations = [
-    "All Test Nations",
-    "India",
-    "Australia",
-    "England",
-    "Pakistan",
-    "South Africa",
-    "New Zealand",
-    "Sri Lanka",
-    "Bangladesh",
-    "West Indies",
-    "Afghanistan",
-    "Ireland",
-    "Zimbabwe",
-]
-selected_team = st.sidebar.selectbox("Filter by National Team", all_test_nations)
+st.sidebar.header("👤 Player Profile Selector")
+available_players = sorted(df["player_name"].unique().tolist())
+selected_player = st.sidebar.selectbox("Select SuperStar Player", available_players)
 
-if selected_team != "All Test Nations":
-  df = df[df["team"] == selected_team]
+# Filter dataframe strictly for the selected player
+player_df = df[df["player_name"] == selected_player]
+player_team = player_df["team"].iloc[0] if not player_df.empty else "Unknown"
 
-# True Cricket Analytics KPI Cards
-total_innings = len(df)
-total_runs_scored = df["runs_scored"].sum()
-overall_strike_rate = round(
-    (df["runs_scored"].sum() / max(1, df["balls_faced"].sum())) * 100, 1
-)
+st.sidebar.markdown(f"**National Team:** {player_team}")
+st.sidebar.markdown("---")
+st.sidebar.subheader("🌐 Global Stream Status")
+st.sidebar.success("🟢 Live Broadcast Feed Synced")
 
-# Safe boundary metric calculation
-fours_count = df["fours"].sum() if "fours" in df.columns else 0
-sixes_count = df["sixes"].sum() if "sixes" in df.columns else 0
-total_boundaries = (fours_count * 4) + (sixes_count * 6)
+# ==========================================
+# PLAYER-CENTRIC METRIC CARDS (KPIs)
+# ==========================================
+total_matches_played = len(player_df)
+player_runs_career = player_df["runs_scored"].sum()
+player_batting_avg = round(player_runs_career / max(1, len(player_df[player_df["runs_scored"] > 0])), 1)
+player_strike_rate = round((player_runs_career / max(1, player_df["balls_faced"].sum())) * 100, 1)
+centuries_count = len(player_df[player_df["runs_scored"] >= 100])
 
-boundary_percentage = (
-    round((total_boundaries / max(1, total_runs_scored)) * 100, 1)
-    if total_runs_scored > 0
-    else 0
-)
+st.subheader(f"📊 Career Profile KPI Summary: {selected_player} ({player_team})")
 
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("Match Logs Analyzed", f"{total_innings:,}", delta="Relational SQL Records")
-k2.metric("Cumulative Runs Logged", f"{total_runs_scored:,}", delta="Dataset Volume")
-k3.metric("Aggregate Strike Rate", f"{overall_strike_rate}%", delta="Scoring Efficiency")
-k4.metric("Boundary Contribution", f"{boundary_percentage}%", delta="Power Hit Index")
+c1, c2, c3, c4, c5 = st.columns(5)
+c1.metric("Matches Analyzed", f"{total_matches_played}")
+c2.metric("Total Career Runs", f"{player_runs_career:,}")
+c3.metric("Est. Batting Avg", f"{player_batting_avg}")
+c4.metric("Career Strike Rate", f"{player_strike_rate}%")
+c5.metric("Centuries (100s)", f"{centuries_count}")
 
 st.markdown("---")
 
-# Professional Analytical Tabs
-tab_sql, tab_outliers, tab_live, tab_ingest = st.tabs([
-    "📋 SQL Player Database & Match Logs",
-    "🚨 Performance Outlier & Anomaly Detection",
-    "📈 Live Global Broadcast Feeds",
-    "⚡ Real-Time Match Data Ingestion",
+# ==========================================
+# PLAYER ANALYTICAL TABS
+# ==========================================
+tab_logs, tab_trends, tab_oppo, tab_ingest = st.tabs([
+    "📋 Player Match Log History",
+    "📈 Performance & Form Trends",
+    "🎯 Head-to-Head Opposition Analysis",
+    "⚡ Add New Match Scorecard",
 ])
 
-with tab_sql:
-  st.subheader(f"Relational Database Records — {selected_team}")
-  st.markdown(
-      "Querying live match logs filtered by international formats and"
-      " performance classifications."
-  )
+with tab_logs:
+  st.subheader(f"SQL Match History for {selected_player}")
+  st.markdown("Complete breakdown of individual innings, balls faced, boundary counts, and status classifications.")
 
-  col_f1, col_f2 = st.columns(2)
-  with col_f1:
-    f_format = st.selectbox("Filter Format", ["All Formats", "Test", "ODI", "T20I"])
-  with col_f2:
-    f_status = st.selectbox(
-        "Filter Performance Tier",
-        ["All Tiers", "🔥 Elite Outlier (Match Winner)", "✅ Baseline Standard", "⚠️ Performance Slump (Review)"],
-    )
-
-  filtered_df = df.copy()
+  f_format = st.selectbox("Filter Format", ["All Formats", "Test", "ODI", "T20I"], key="fmt_filter")
+  filtered_logs = player_df.copy()
   if f_format != "All Formats":
-    filtered_df = filtered_df[filtered_df["format"] == f_format]
-  if f_status != "All Tiers":
-    filtered_df = filtered_df[filtered_df["performance_status"] == f_status]
+    filtered_logs = filtered_logs[filtered_logs["format"] == f_format]
 
   st.dataframe(
-      filtered_df.sort_values(by="match_date", ascending=False),
+      filtered_logs[["match_date", "format", "opposition", "runs_scored", "balls_faced", "fours", "sixes", "performance_status"]].sort_values(by="match_date", ascending=False),
       use_container_width=True,
   )
 
-with tab_outliers:
-  st.subheader("Automated Statistical Outlier & Anomaly Detection Engine")
-  st.markdown(
-      "Isolating elite batting performances (>100 runs or >150 strike rate) and"
-      " performance slumps using automated data rules."
-  )
+with tab_trends:
+  st.subheader(f"Scoring Trend & Outlier Analysis: {selected_player}")
+  st.markdown("Visualizing match-by-match run progression and isolating career peak innings.")
 
-  outliers_df = df[df["performance_status"] != "✅ Baseline Standard"]
-  if not outliers_df.empty:
-    st.info(
-        f"📊 Detected {len(outliers_df)} statistical anomalies requiring"
-        " tactical review."
-    )
-    st.dataframe(
-        outliers_df[[
-            "match_id",
-            "player_name",
-            "team",
-            "opposition",
-            "runs_scored",
-            "balls_faced",
-            "performance_status",
-            "match_date",
-        ]],
-        use_container_width=True,
-    )
+  if not player_df.empty:
+    chart_data = player_df.set_index("match_date")["runs_scored"]
+    st.line_chart(chart_data)
+    
+    st.markdown("### 🔥 Highlighted Elite Innings")
+    elites = player_df[player_df["runs_scored"] >= 80]
+    if not elites.empty:
+      st.dataframe(elites[["match_date", "format", "opposition", "runs_scored", "balls_faced", "performance_status"]], use_container_width=True)
+    else:
+      st.info("No standout elite knocks >80 runs recorded in current window.")
   else:
-    st.success("All players are performing within normal baseline variance.")
+    st.warning("No data available for this player.")
 
-with tab_live:
-  st.subheader("Real-Time External Data Feed & Stream Integration")
-  st.markdown(
-      "Live capital/broadcast benchmark stream simulating low-latency API"
-      " synchronization:"
-  )
-  if not market_data.empty:
-    st.line_chart(market_data)
+with tab_oppo:
+  st.subheader(f"Opposition Performance Breakdown")
+  st.markdown("Aggregating runs scored and average output against different bowling nations.")
+
+  if not player_df.empty:
+    oppo_agg = player_df.groupby("opposition").agg(
+        Matches=("match_id", "count"),
+        Total_Runs=("runs_scored", "sum"),
+        Avg_Runs=("runs_scored", "mean")
+    ).reset_index()
+    oppo_agg["Avg_Runs"] = oppo_agg["Avg_Runs"].round(1)
+    st.dataframe(oppo_agg, use_container_width=True)
   else:
-    st.warning("Establishing secure connection to live API stream...")
+    st.info("Insufficient data for aggregation.")
 
 with tab_ingest:
-  st.subheader("Interactive Match Scorecard Ingestion Portal")
-  st.markdown(
-      "Simulate real-time data entry to instantly update the local SQLite"
-      " database and recalculate KPIs."
-  )
+  st.subheader(f"Log a New Match Inning for {selected_player}")
+  st.markdown("Instantly push a new match record into the SQLite database to update this player's stats.")
 
-  with st.form("cricket_form"):
-    col_i1, col_i2 = st.columns(2)
-    with col_i1:
-      p_name = st.text_input("Player Name", "Virat Kohli")
-      p_team = st.selectbox("National Team", all_test_nations[1:])
-      p_opp = st.text_input("Opposition Team", "Australia")
-      p_fmt = st.selectbox("Match Format", ["ODI", "T20I", "Test"])
-    with col_i2:
-      p_runs = st.number_input("Runs Scored", min_value=0, max_value=300, value=85)
-      p_balls = st.number_input("Balls Faced", min_value=1, max_value=350, value=65)
-      p_wickets = st.number_input("Wickets Taken", min_value=0, max_value=10, value=0)
+  with st.form("player_match_form"):
+    col_a, col_b = st.columns(2)
+    with col_a:
+      opp_team = st.text_input("Opposition Nation", "Australia")
+      match_fmt = st.selectbox("Format", ["ODI", "T20I", "Test"])
+    with col_b:
+      runs = st.number_input("Runs Scored", min_value=0, max_value=300, value=75)
+      balls = st.number_input("Balls Faced", min_value=1, max_value=350, value=60)
+      wickets = st.number_input("Wickets Taken (if bowler/all-rounder)", min_value=0, max_value=10, value=0)
 
-    submit_record = st.form_submit_button("Commit Scorecard to SQL Database")
+    submit_btn = st.form_submit_button("Commit Inning to Database")
 
-    if submit_record:
-      new_match_id = f"MATCH-2026-{random.randint(500,999)}"
-      sr = (p_runs / p_balls) * 100
-      status = (
-          "🔥 Elite Outlier (Match Winner)"
-          if sr > 150 or p_runs > 100
-          else "✅ Baseline Standard"
-      )
-
+    if submit_btn:
+      new_id = f"MATCH-2026-{random.randint(5009,9999)}"
+      sr = (runs / balls) * 100
+      status = "🔥 Elite Match-Winning Knock" if sr > 150 or runs >= 100 else "✅ Stable Baseline"
+      
       conn = sqlite3.connect("stump_metrics.db")
       cur = conn.cursor()
       cur.execute(
           """
-                INSERT INTO player_match_logs 
-                (match_id, player_name, team, opposition, format, runs_scored, balls_faced, fours, sixes, wickets_taken, economy_rate, performance_status, match_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 8, 3, ?, 6.5, ?, ?)
-            """,
-          (
-              new_match_id,
-              p_name,
-              p_team,
-              p_opp,
-              p_fmt,
-              p_runs,
-              p_balls,
-              p_wickets,
-              status,
-              datetime.now().strftime("%Y-%m-%d"),
-          ),
+            INSERT INTO player_match_logs 
+            (match_id, player_name, team, opposition, format, runs_scored, balls_faced, fours, sixes, wickets_taken, economy_rate, performance_status, match_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 6, 2, ?, 6.0, ?, ?)
+          """,
+          (new_id, selected_player, player_team, opp_team, match_fmt, runs, balls, wickets, status, datetime.now().strftime("%Y-%m-%d"))
       )
       conn.commit()
       conn.close()
-      st.success(
-          f"Successfully committed match {new_match_id} to the SQLite database!"
-      )
+      st.success(f"Successfully recorded new innings for {selected_player}!")
       st.rerun()
