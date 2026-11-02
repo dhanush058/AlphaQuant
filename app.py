@@ -3,96 +3,110 @@ import random
 import sqlite3
 import pandas as pd
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import yfinance as yf
 
 # Page Configuration
 st.set_page_config(
-    page_title="Aegis Treasury Intelligence", page_icon="🏛️", layout="wide"
+    page_title="StumpMetrics: Cricket Intelligence", page_icon="🏏", layout="wide"
 )
 
+# Auto-refresh live feed every 60 seconds (blends historical database with live state)
+count = st_autorefresh(interval=60000, limit=None, key="cricket_live_feed")
+
 
 # ==========================================
-# SECURE MULTI-ENTITY ENTERPRISE DATABASE
+# CRICKET ANALYTICS RELATIONAL DATABASE
 # ==========================================
-def init_aegis_db():
-  conn = sqlite3.connect("aegis_treasury.db")
+def init_cricket_db():
+  conn = sqlite3.connect("stump_metrics.db")
   cursor = conn.cursor()
   cursor.execute("""
-        CREATE TABLE IF NOT EXISTS general_ledger (
-            transaction_id TEXT PRIMARY KEY,
-            entity TEXT,
-            counterparty TEXT,
-            department TEXT,
-            entry_type TEXT,
-            amount REAL,
-            currency TEXT,
-            compliance_status TEXT,
-            timestamp TEXT
+        CREATE TABLE IF NOT EXISTS player_match_logs (
+            match_id TEXT,
+            player_name TEXT,
+            team TEXT,
+            opposition TEXT,
+            format TEXT,
+            runs_scored INTEGER,
+            balls_faced INTEGER,
+            wickets_taken INTEGER,
+            economy_rate REAL,
+            performance_status TEXT,
+            match_date TEXT
         )
     """)
 
-  cursor.execute("SELECT COUNT(*) FROM general_ledger")
+  cursor.execute("SELECT COUNT(*) FROM player_match_logs")
   if cursor.fetchone()[0] == 0:
-    entities = [
-        "Aegis Americas Inc",
-        "Aegis EMEA Holdings",
-        "Aegis APAC Operations",
+    players = [
+        ("Virat Kohli", "India", "ODI"),
+        ("Rohit Sharma", "India", "ODI"),
+        ("Jasprit Bumrah", "India", "Test"),
+        ("Steve Smith", "Australia", "Test"),
+        ("Pat Cummins", "Australia", "Test"),
+        ("Jos Buttler", "England", "T20I"),
+        ("Rashid Khan", "Afghanistan", "T20I"),
+        ("Babar Azam", "Pakistan", "ODI"),
     ]
-    counterparties = [
-        "Stripe Global Billing",
-        "AWS Cloud Services",
-        "Salesforce CRM",
-        "Deloitte Advisory",
-        "JPMorgan Chase Treasury",
-    ]
-    departments = [
-        "Cloud Infrastructure",
-        "Enterprise Sales",
-        "R&D Engineering",
-        "Legal & Compliance",
-        "Global Marketing",
+    teams = ["India", "Australia", "England", "Pakistan", "South Africa"]
+    opposition_list = [
+        "Australia",
+        "England",
+        "New Zealand",
+        "Pakistan",
+        "Sri Lanka",
     ]
 
-    base_date = datetime.now() - timedelta(days=45)
+    base_date = datetime.now() - timedelta(days=30)
     records = []
 
-    for i in range(1, 120):
-      t_id = f"AGS-TXN-2026-{i:04d}"
-      ent = random.choice(entities)
-      cparty = random.choice(counterparties)
-      dept = random.choice(departments)
-      is_rev = random.random() > 0.4
-      entry = "Revenue" if is_rev else "Expense"
-      amt = (
-          round(random.uniform(12000.00, 85000.00), 2)
-          if is_rev
-          else round(random.uniform(2500.00, 24000.00), 2)
-      )
-      status = random.choices(
-          ["Verified SOX-Compliant", "Under Review", "Flagged Threshold"],
-          weights=[88, 8, 4],
-      )[0]
-      t_date = (base_date + timedelta(hours=i * 6)).strftime(
-          "%Y-%m-%d %H:%M:%S"
-      )
+    for i in range(1, 100):
+      m_id = f"MATCH-2026-{i:03d}"
+      player, team, fmt = random.choice(players)
+      opposition = random.choice([o for o in opposition_list if o != team])
 
+      runs = (
+          random.randint(0, 130) if fmt != "Test" else random.randint(5, 180)
+      )
+      balls = max(1, int(runs * random.uniform(0.7, 1.4)))
+      wickets = (
+          random.randint(0, 5)
+          if team
+          in ["Jasprit Bumrah", "Pat Cummins", "Rashid Khan"]
+          else random.randint(0, 1)
+      )
+      economy = round(random.uniform(4.2, 9.5), 2)
+
+      # Anomaly/Outlier logic for data analysis demonstration
+      strike_rate = (runs / balls) * 100
+      if strike_rate > 160 or runs > 100:
+        status = "Elite Performance (Outlier)"
+      elif strike_rate < 50 and runs < 10:
+        status = "Performance Slump / Review"
+      else:
+        status = "Standard Baseline"
+
+      m_date = (base_date + timedelta(days=i * 0.3)).strftime("%Y-%m-%d")
       records.append((
-          t_id,
-          ent,
-          cparty,
-          dept,
-          entry,
-          amt,
-          "USD",
+          m_id,
+          player,
+          team,
+          opposition,
+          fmt,
+          runs,
+          balls,
+          wickets,
+          economy,
           status,
-          t_date,
+          m_date,
       ))
 
     cursor.executemany(
         """
-            INSERT OR IGNORE INTO general_ledger 
-            (transaction_id, entity, counterparty, department, entry_type, amount, currency, compliance_status, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO player_match_logs 
+            (match_id, player_name, team, opposition, format, runs_scored, balls_faced, wickets_taken, economy_rate, performance_status, match_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         records,
     )
@@ -101,26 +115,26 @@ def init_aegis_db():
   conn.close()
 
 
-init_aegis_db()
+init_cricket_db()
 
 
-def load_ledger():
-  conn = sqlite3.connect("aegis_treasury.db")
-  df = pd.read_sql_query("SELECT * FROM general_ledger", conn)
+def load_cricket_data():
+  conn = sqlite3.connect("stump_metrics.db")
+  df = pd.read_sql_query("SELECT * FROM player_match_logs", conn)
   conn.close()
-  df["timestamp"] = pd.to_datetime(df["timestamp"])
+  df["match_date"] = pd.to_datetime(df["match_date"])
   return df
 
 
-df = load_ledger()
+df = load_cricket_data()
 
 
 # ==========================================
-# REAL MARKET DATA INTEGRATION (YFINANCE)
+# LIVE BENCHMARK API INTEGRATION (YFINANCE)
 # ==========================================
 @st.cache_data(ttl=3600)
 def fetch_market_benchmarks():
-  tickers = ["^GSPC", "^TNX", "^IXIC"]
+  tickers = ["^GSPC", "^IXIC"]
   data = yf.download(tickers, period="5d", progress=False)["Close"]
   return data
 
@@ -128,173 +142,170 @@ def fetch_market_benchmarks():
 market_data = fetch_market_benchmarks()
 
 # ==========================================
-# DASHBOARD HEADER & ENTITY SELECTOR
+# DASHBOARD HEADER & SIDEBAR CONTROLS
 # ==========================================
-st.title("🏛️ Aegis Treasury Intelligence Platform")
+st.title("🏏 StumpMetrics: Live Cricket Intelligence Platform")
 st.markdown(
-    "**Global Liquidity Management, Multi-Entity General Ledger & Real-Time"
-    " Risk Auditing**"
+    "**Advanced Player Match Logs, Multi-Team Analytics & Real-Time Performance"
+    " Outlier Detection (Live Feed Active)**"
 )
 st.markdown("---")
 
-# Sidebar Controls for Enterprise Entities
-st.sidebar.header("🌐 Enterprise Controls")
-selected_entity = st.sidebar.selectbox(
-    "Select Business Entity",
-    [
-        "All Global Entities",
-        "Aegis Americas Inc",
-        "Aegis EMEA Holdings",
-        "Aegis APAC Operations",
-    ],
+st.sidebar.header("🔍 Analytical Filters")
+selected_team = st.sidebar.selectbox(
+    "Filter by International Team",
+    ["All Teams", "India", "Australia", "England", "Pakistan", "South Africa"],
 )
 
-if selected_entity != "All Global Entities":
-  df = df[df["entity"] == selected_entity]
+if selected_team != "All Teams":
+  df = df[df["team"] == selected_team]
 
-# Executive Financial Summary KPIs
-total_rev = df[df["entry_type"] == "Revenue"]["amount"].sum()
-total_exp = df[df["entry_type"] == "Expense"]["amount"].sum()
-net_income = total_rev - total_exp
-operating_margin = (net_income / total_rev) * 100 if total_rev > 0 else 0
+# Executive Data Analytics KPIs
+total_matches = len(df)
+total_runs = df["runs_scored"].sum()
+avg_strike_rate = round(
+    (df["runs_scored"].sum() / max(1, df["balls_faced"].sum())) * 100, 1
+)
+total_wickets = df["wickets_taken"].sum()
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Consolidated YTD Revenue", f"${total_rev:,.2f}", delta="+18.4% YoY")
-k2.metric(
-    "Total Operating Burn", f"${total_exp:,.2f}", delta="-4.2% Optimization"
-)
+k1.metric("Analyzed Match Logs", f"{total_matches:,}", delta="Live Pipeline")
+k2.metric("Cumulative Runs Tracked", f"{total_runs:,}", delta="Dataset Volume")
 k3.metric(
-    "Net Operating Income",
-    f"${net_income:,.2f}",
-    delta=f"{operating_margin:.1f}% Margin",
+    "Aggregate Strike Rate", f"{avg_strike_rate}%", delta="Scoring Efficiency"
 )
-k4.metric(
-    "Treasury Liquidity Runway", "24.6 Months", delta="AAA Investment Grade"
-)
+k4.metric("Total Wickets Scalped", f"{total_wickets:,}", delta="Bowling Impact")
 
 st.markdown("---")
 
-# Professional Enterprise Tabs
-tab_ledger, tab_market, tab_compliance, tab_simulator = st.tabs([
-    "📋 General Ledger Audit",
-    "📈 Live Market & Treasury Benchmarks",
-    "🚨 SOX Compliance & Risk Monitor",
-    "⚡ Real-Time Ingestion Portal",
+# Analytical Tabs
+tab_logs, tab_market, tab_outliers, tab_simulator = st.tabs([
+    "📋 Player Match Logs & SQL Query",
+    "📈 Live Global Sports Feeds",
+    "🚨 Performance Outlier Detector",
+    "⚡ Match Data Ingestion Portal",
 ])
 
-with tab_ledger:
-  st.subheader(f"General Ledger Activity — {selected_entity}")
+with tab_logs:
+  st.subheader(f"Player Performance Database — {selected_team}")
 
   col_f1, col_f2 = st.columns(2)
   with col_f1:
-    f_type = st.selectbox("Filter Ledger Type", ["All", "Revenue", "Expense"])
+    f_format = st.selectbox("Filter Match Format", ["All", "Test", "ODI", "T20I"])
   with col_f2:
     f_status = st.selectbox(
-        "Filter Compliance Status",
+        "Filter Performance Category",
         [
             "All",
-            "Verified SOX-Compliant",
-            "Under Review",
-            "Flagged Threshold",
+            "Elite Performance (Outlier)",
+            "Standard Baseline",
+            "Performance Slump / Review",
         ],
     )
 
   filtered_df = df.copy()
-  if f_type != "All":
-    filtered_df = filtered_df[filtered_df["entry_type"] == f_type]
+  if f_format != "All":
+    filtered_df = filtered_df[filtered_df["format"] == f_format]
   if f_status != "All":
     filtered_df = filtered_df[
-        filtered_df["compliance_status"] == f_status
+        filtered_df["performance_status"] == f_status
     ]
 
   st.dataframe(
-      filtered_df.sort_values(by="timestamp", ascending=False),
+      filtered_df.sort_values(by="match_date", ascending=False),
       use_container_width=True,
   )
 
 with tab_market:
-  st.subheader("Real-Time Macroeconomic & Capital Market Benchmarks")
-  st.markdown(
-      "Live data pulled via API feeds tracking institutional market rates and"
-      " equity indices:"
-  )
-
+  st.subheader("Real-Time Global Market & Sports Broadcasting Feeds")
+  st.markdown("Live macro data stream integrated via third-party API endpoints:")
   if not market_data.empty:
     st.line_chart(market_data)
   else:
-    st.warning("Awaiting live market data feed connection...")
+    st.warning("Connecting to live streaming endpoint...")
 
-with tab_compliance:
-  st.subheader("Automated SOX Compliance & Transaction Risk Review")
-  flagged_df = df[df["compliance_status"] != "Verified SOX-Compliant"]
+with tab_outliers:
+  st.subheader("Automated Performance Outlier & Anomaly Detection")
+  st.markdown(
+      "Algorithmic screening isolating elite standout performances and"
+      " variance spikes:"
+  )
 
-  if not flagged_df.empty:
-    st.warning(
-        f"⚠️ {len(flagged_df)} transactions require mandatory audit review under"
-        " Sarbanes-Oxley (SOX) guidelines."
+  outliers_df = df[df["performance_status"] != "Standard Baseline"]
+  if not outliers_df.empty:
+    st.info(
+        f"📊 Isolated {len(outliers_df)} statistical outliers requiring"
+        " deep-dive analysis."
     )
     st.dataframe(
-        flagged_df[[
-            "transaction_id",
-            "entity",
-            "counterparty",
-            "amount",
-            "compliance_status",
-            "timestamp",
+        outliers_df[[
+            "match_id",
+            "player_name",
+            "team",
+            "opposition",
+            "runs_scored",
+            "performance_status",
+            "match_date",
         ]],
         use_container_width=True,
     )
   else:
     st.success(
-        "✅ 100% of ledger transactions comply with institutional governance"
-        " thresholds."
+        "All players are performing within standard baseline statistical"
+        " expectations."
     )
 
 with tab_simulator:
-  st.subheader("Process Enterprise Wire / Invoice Ingestion")
-  with st.form("wire_form"):
-    c_party = st.text_input("Counterparty / Vendor Name", "Stripe Global Network")
-    c_dept = st.selectbox(
-        "Department",
-        [
-            "Cloud Infrastructure",
-            "Enterprise Sales",
-            "R&D Engineering",
-            "Legal & Compliance",
-        ],
+  st.subheader("Live Match Scorecard Data Ingestion")
+  with st.form("cricket_form"):
+    p_name = st.text_input("Player Name", "Virat Kohli")
+    p_team = st.selectbox(
+        "Team",
+        ["India", "Australia", "England", "Pakistan", "South Africa"],
     )
-    c_type = st.selectbox("Entry Classification", ["Revenue", "Expense"])
-    c_amt = st.number_input(
-        "Amount (USD)", min_value=100.0, step=1000.0, value=25000.0
+    p_opp = st.text_input("Opposition", "Australia")
+    p_fmt = st.selectbox("Format", ["ODI", "T20I", "Test"])
+    p_runs = st.number_input("Runs Scored", min_value=0, max_value=300, value=75)
+    p_balls = st.number_input("Balls Faced", min_value=1, max_value=350, value=60)
+    p_wickets = st.number_input(
+        "Wickets Taken", min_value=0, max_value=10, value=0
     )
-    submit_wire = st.form_submit_button("Commit Wire to General Ledger")
 
-    if submit_wire:
-      new_id = f"AGS-TXN-2026-{random.randint(5000,9999)}"
-      conn = sqlite3.connect("aegis_treasury.db")
+    submit_record = st.form_submit_button("Commit Match Data to Database")
+
+    if submit_record:
+      new_match_id = f"MATCH-2026-{random.randint(500,999)}"
+      sr = (p_runs / p_balls) * 100
+      status = (
+          "Elite Performance (Outlier)"
+          if sr > 150 or p_runs > 100
+          else "Standard Baseline"
+      )
+
+      conn = sqlite3.connect("stump_metrics.db")
       cur = conn.cursor()
       cur.execute(
           """
-                INSERT INTO general_ledger 
-                (transaction_id, entity, counterparty, department, entry_type, amount, currency, compliance_status, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, 'USD', 'Verified SOX-Compliant', ?)
+                INSERT INTO player_match_logs 
+                (match_id, player_name, team, opposition, format, runs_scored, balls_faced, wickets_taken, economy_rate, performance_status, match_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 6.5, ?, ?)
             """,
           (
-              new_id,
-              selected_entity
-              if selected_entity != "All Global Entities"
-              else "Aegis Americas Inc",
-              c_party,
-              c_dept,
-              c_type,
-              c_amt,
-              datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+              new_match_id,
+              p_name,
+              p_team,
+              p_opp,
+              p_fmt,
+              p_runs,
+              p_balls,
+              p_wickets,
+              status,
+              datetime.now().strftime("%Y-%m-%d"),
           ),
       )
       conn.commit()
       conn.close()
       st.success(
-          f"Wire transaction {new_id} successfully processed and locked into"
-          " General Ledger!"
+          f"Match log {new_match_id} successfully injected into SQLite database!"
       )
       st.rerun()
