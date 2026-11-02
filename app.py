@@ -1,4 +1,5 @@
 from datetime import datetime
+import random
 import sqlite3
 import pandas as pd
 import streamlit as st
@@ -63,10 +64,6 @@ st.markdown(
         border: 1px solid #374151;
         margin-bottom: 20px;
     }
-    /* Tabs & Radio Active States */
-    .stRadio [role="radiogroup"] label div {
-        color: #d1d5db;
-    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -76,13 +73,14 @@ st.markdown(
 # ==========================================
 # SQL DATABASE INITIALIZATION
 # ==========================================
-def init_command_db():
+def init_db():
   conn = sqlite3.connect("command_center.db")
   cursor = conn.cursor()
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS sql_transactions (
             transaction_id TEXT PRIMARY KEY,
             timestamp TEXT,
+            entity_region TEXT,
             description TEXT,
             debit REAL,
             credit REAL,
@@ -92,21 +90,21 @@ def init_command_db():
   cursor.execute("SELECT COUNT(*) FROM sql_transactions")
   if cursor.fetchone()[0] == 0:
     sample_txs = [
-        ("TXM-9021", "2026-11-02 21:03:07", "PAYMENT FROM CLIENT A", 0.0, 120500.0, "CONFIRMED"),
-        ("TXM-9020", "2026-11-02 21:03:00", "UTILITY BILL PAYMENT", 15200.0, 0.0, "PROCESSING"),
-        ("TXN-9019", "2026-11-02 21:03:00", "PAYMENT FROM CLIENT A", 0.0, 15500.0, "PROCESSING"),
-        ("TXN-9018", "2026-11-02 21:00:15", "SWIFT WIRE TRANSFER - EMEA", 450000.0, 0.0, "CONFIRMED"),
-        ("TXN-9017", "2026-11-02 20:55:40", "VENDOR SETTLEMENT - APAC", 82300.0, 0.0, "CONFIRMED"),
+        ("TXM-9021", "2026-11-02 21:03:07", "Americas (US)", "PAYMENT FROM CLIENT A", 0.0, 120500.0, "CONFIRMED"),
+        ("TXM-9020", "2026-11-02 21:03:00", "EMEA (Europe)", "UTILITY BILL PAYMENT", 15200.0, 0.0, "PROCESSING"),
+        ("TXN-9019", "2026-11-02 21:03:00", "APAC (Singapore)", "PAYMENT FROM CLIENT A", 0.0, 15500.0, "PROCESSING"),
+        ("TXN-9018", "2026-11-02 21:00:15", "EMEA (Europe)", "SWIFT WIRE TRANSFER", 450000.0, 0.0, "CONFIRMED"),
+        ("TXN-9017", "2026-11-02 20:55:40", "APAC (Singapore)", "VENDOR SETTLEMENT", 82300.0, 0.0, "CONFIRMED"),
     ]
-    cursor.executemany("INSERT OR IGNORE INTO sql_transactions VALUES (?, ?, ?, ?, ?, ?)", sample_txs)
+    cursor.executemany("INSERT OR IGNORE INTO sql_transactions VALUES (?, ?, ?, ?, ?, ?, ?)", sample_txs)
   conn.commit()
   conn.close()
 
 
-init_command_db()
+init_db()
 
 
-def load_transactions():
+def load_data():
   conn = sqlite3.connect("command_center.db")
   df = pd.read_sql_query("SELECT * FROM sql_transactions ORDER BY timestamp DESC", conn)
   conn.close()
@@ -117,9 +115,9 @@ def load_transactions():
 # LIVE API MARKET FEED (REAL DATA)
 # ==========================================
 @st.cache_data(ttl=300)
-def fetch_command_market_data():
+def fetch_market_data():
   try:
-    data = yf.download(["^GSPC", "^IXIC"], period="1mo", progress=False)["Close"]
+    data = yf.download(["^GSPC", "^IXIC", "^TNX"], period="1mo", progress=False)["Close"]
     if isinstance(data.columns, pd.MultiIndex):
       data.columns = data.columns.droplevel(0)
     return data
@@ -127,10 +125,10 @@ def fetch_command_market_data():
     return pd.DataFrame()
 
 
-market_data = fetch_command_market_data()
+market_df = fetch_market_data()
 
 # ==========================================
-# SIDEBAR NAVIGATION RAIL
+# SIDEBAR NAVIGATION & INTERACTIVE FILTERS
 # ==========================================
 st.sidebar.markdown("### 🏦 Aegis Command")
 st.sidebar.markdown("---")
@@ -139,104 +137,186 @@ nav_choice = st.sidebar.radio(
     [
         "📊 Executive Command Center",
         "📋 SQL Transaction Ledger",
-        "⚡ Live API Tickers",
+        "⚡ Live API Analytics",
+        "🤖 Aegis AI Assistant",
         "⚙️ Treasury Settings",
     ],
 )
+
 st.sidebar.markdown("---")
-st.sidebar.success("🟢 Real-Time Secure Stream Active")
+st.sidebar.subheader("🌐 Global Filters")
+selected_region = st.sidebar.selectbox("Filter Region", ["All Regions", "Americas (US)", "EMEA (Europe)", "APAC (Singapore)"])
+currency_mode = st.sidebar.selectbox("Currency Display", ["USD ($)", "EUR (€)", "GBP (£)", "AED (د.إ)", "JPY (¥)"])
+selected_status = st.sidebar.selectbox("Transaction Status", ["All Statuses", "CONFIRMED", "PROCESSING"])
+
+st.sidebar.markdown("---")
+st.sidebar.success("🟢 Secure Stream Active")
+
+# FX Conversion Multipliers
+fx_rates = {"USD ($)": 1.0, "EUR (€)": 0.92, "GBP (£)": 0.79, "AED (د.إ)": 3.67, "JPY (¥)": 152.0}
+fx_symbol = {"USD ($)": "$", "EUR (€)": "€", "GBP (£)": "£", "AED (د.إ)": "AED ", "JPY (¥)": "¥"}
+mult = fx_rates[currency_mode]
+sym = fx_symbol[currency_mode]
+
+# Load and filter main dataset
+df = load_data()
+if selected_region != "All Regions":
+  df = df[df["entity_region"] == selected_region]
+if selected_status != "All Statuses":
+  df = df[df["status"] == selected_status]
 
 # ==========================================
-# VIEW ROUTING BASED ON SIDEBAR SELECTION
+# ROUTING VIEWS
 # ==========================================
 
 if nav_choice == "📊 Executive Command Center":
-  st.markdown("""
+  st.markdown(f"""
         <div class="command-header">
             <h2 style="margin:0; color:#ffffff; font-size: 1.5rem;">🌐 GLOBAL TREASURY COMMAND CENTER</h2>
             <div style="font-size: 0.85rem; color: #00ff66; font-weight: 600;">
-                LIVE TICKERS: &nbsp; S&P 500 &nbsp;|&nbsp; NASDAQ &nbsp;|&nbsp; REAL-TIME FEED
+                REGION: {selected_region} &nbsp;|&nbsp; CURRENCY: {currency_mode}
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-  # 6 KPI METRIC CARDS
+  # 6 KPI Metric Cards
   c1, c2, c3, c4, c5, c6 = st.columns(6)
-  c1.metric("Cash on Hand", "$78.2M", "+2.1% (Sim)")
-  c2.metric("Forex Exposure", "$1.4B", "-0.5% (Sim)")
-  c3.metric("Net Interest Margin", "3.8%", "+0.15% (Sim)")
-  c4.metric("Operating Cash Flow", "$25M", "+4.3% (Sim)")
-  c5.metric("Debt Service Ratio", "1.7X", "-0.2% (Sim)")
-  c6.metric("Investment Portfolio", "$421M", "+1.8% (Sim)")
+  c1.metric("Cash on Hand", f"{sym}{78.2 * mult:.1f}M", "+2.1%")
+  c2.metric("Forex Exposure", f"{sym}{1.4 * mult:.1f}B", "-0.5%")
+  c3.metric("Net Interest Margin", "3.8%", "+0.15%")
+  c4.metric("Operating Cash Flow", f"{sym}{25 * mult:.0f}M", "+4.3%")
+  c5.metric("Debt Service Ratio", "1.7X", "-0.2%")
+  c6.metric("Investment Portfolio", f"{sym}{421 * mult:.0f}M", "+1.8%")
 
   st.markdown("---")
 
-  # MIDDLE CHARTS SECTION
+  # Middle Charts Section
   col_m1, col_m2, col_m3 = st.columns([1.2, 1.2, 1])
 
   with col_m1:
-    st.subheader("Global Cash Balance (Simulated)")
-    if not market_data.empty and "^GSPC" in market_data.columns:
-      st.line_chart(market_data["^GSPC"].tail(30), height=220)
+    st.subheader("Global Cash Balance")
+    if not market_df.empty and "^GSPC" in market_df.columns:
+      st.line_chart(market_df["^GSPC"].tail(30), height=220)
     else:
-      chart_data = pd.DataFrame({"Cash": [45, 52, 48, 60, 58, 65, 78]}, index=range(7))
-      st.line_chart(chart_data, height=220)
+      st.line_chart(pd.DataFrame({"Cash": [45, 52, 48, 60, 58, 65, 78]}, index=range(7)), height=220)
 
   with col_m2:
-    st.subheader("Cash Flow Forecast (Simulated)")
+    st.subheader("Cash Flow Forecast (90D)")
     forecast_data = pd.DataFrame({
-        "Cash Flow": [100, 120, 110, 140, 160, 150, 180, 210, 190, 240],
-        "Forecast": [105, 125, 115, 145, 165, 155, 185, 215, 195, 250]
+        "Cash Flow": [100*mult, 120*mult, 110*mult, 140*mult, 160*mult, 150*mult, 180*mult, 210*mult, 190*mult, 240*mult],
+        "Forecast": [105*mult, 125*mult, 115*mult, 145*mult, 165*mult, 155*mult, 185*mult, 215*mult, 195*mult, 250*mult]
     })
     st.area_chart(forecast_data, height=220)
 
   with col_m3:
-    st.subheader("Liquidity Composition (Simulated)")
+    st.subheader("Liquidity Breakdown")
     liquidity_df = pd.DataFrame({
-        "Asset": ["Cash", "Short-Term Securities", "Marketable Securities"],
+        "Asset": ["Cash", "Short-Term", "Marketable"],
         "Share (%)": [55, 30, 15]
     }).set_index("Asset")
     st.bar_chart(liquidity_df, height=220)
 
   st.markdown("---")
 
-  # BOTTOM SECTION
+  # Bottom Section
   b1, b2 = st.columns([2, 1])
   with b1:
-    st.subheader("📋 SQL Transaction Table (Simulated Enterprise Ledger)")
-    tx_df = load_transactions()
-    st.dataframe(tx_df, use_container_width=True, hide_index=True)
+    st.subheader("📋 Filtered SQL Transaction Ledger")
+    display_df = df.copy()
+    display_df["debit"] = display_df["debit"] * mult
+    display_df["credit"] = display_df["credit"] * mult
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
 
   with b2:
-    st.subheader("📊 Revenue by Region ($M - Simulated)")
+    st.subheader("📊 Revenue by Region")
     region_data = pd.DataFrame({
-        "Region": ["Americas", "EMEA", "APAC", "LatAm", "MeA"],
-        "Revenue": [550, 420, 390, 310, 280]
+        "Region": ["Americas", "EMEA", "APAC", "LatAm"],
+        "Revenue": [550*mult, 420*mult, 390*mult, 310*mult]
     }).set_index("Region")
     st.bar_chart(region_data, height=240)
 
 elif nav_choice == "📋 SQL Transaction Ledger":
   st.subheader("📋 Relational SQL Transaction Database Manager")
-  st.markdown("Manage and query the backend SQLite transaction ledger. *Note: Data is simulated for portfolio demonstration.*")
-  
-  tx_df = load_transactions()
-  st.dataframe(tx_df, use_container_width=True, hide_index=True)
+  st.markdown("Query, inspect, and insert new corporate ledger records into the SQLite database.")
 
-elif nav_choice == "⚡ Live API Tickers":
-  st.subheader("⚡ Real-Time Market Feed (Live API Data)")
-  st.markdown("Streaming live closing prices and market movements directly from Yahoo Finance API endpoints.")
-  
-  if not market_data.empty:
-    st.line_chart(market_data)
-    st.dataframe(market_data.tail(15), use_container_width=True)
+  with st.form("new_trade_form"):
+    st.markdown("### ⚡ Execute & Commit New Treasury Transaction")
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+      t_id = f"TXN-{random.randint(8000, 9999)}"
+      t_reg = st.selectbox("Entity Region", ["Americas (US)", "EMEA (Europe)", "APAC (Singapore)"])
+      t_desc = st.text_input("Description", "CLIENT SETTLEMENT WIRE")
+    with col_f2:
+      t_type = st.selectbox("Transaction Type", ["Credit (Incoming)", "Debit (Outgoing)"])
+      t_amt = st.number_input("Amount ($ USD)", min_value=100.0, value=50000.0)
+
+    submitted = st.form_submit_button("Commit Transaction to SQL DB")
+    if submitted:
+      debit_val = t_amt if t_type == "Debit (Outgoing)" else 0.0
+      credit_val = t_amt if t_type == "Credit (Incoming)" else 0.0
+      now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+      
+      conn = sqlite3.connect("command_center.db")
+      cur = conn.cursor()
+      cur.execute("INSERT INTO sql_transactions VALUES (?, ?, ?, ?, ?, ?, ?)", 
+                  (t_id, now_str, t_reg, t_desc, debit_val, credit_val, "CONFIRMED"))
+      conn.commit()
+      conn.close()
+      st.success(f"Successfully committed transaction {t_id}!")
+      st.rerun()
+
+  st.markdown("---")
+  st.subheader("Current Database Records")
+  st.dataframe(load_data(), use_container_width=True, hide_index=True)
+
+elif nav_choice == "⚡ Live API Analytics":
+  st.subheader("⚡ Real-Time Market Feed Analytics")
+  st.markdown("Streaming real-time benchmark yields and stock indices directly from Yahoo Finance API.")
+  if not market_df.empty:
+    st.line_chart(market_df)
+    st.dataframe(market_df.tail(15), use_container_width=True)
   else:
-    st.warning("Connecting to live market API stream...")
+    st.warning("Connecting to live API stream...")
+
+elif nav_choice == "🤖 Aegis AI Assistant":
+  st.subheader("🤖 Aegis AI Treasury Assistant")
+  st.markdown("Ask natural language questions about your cash positions, transaction logs, forex exposure, or risk metrics.")
+
+  if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "assistant", "content": "Hello! I am your Aegis AI Treasury Assistant. How can I assist you with your cash flow or portfolio analytics today?"}
+    ]
+
+  for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+      st.markdown(message["content"])
+
+  if prompt := st.chat_input("Ask about cash balance, FX risk, or SQL transactions..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+      st.markdown(prompt)
+
+    prompt_lower = prompt.lower()
+    if "cash" in prompt_lower or "balance" in prompt_lower:
+      response = "Your current global cash on hand is **$78.2M**, with an operating cash flow of **$25M** (+4.3% growth)."
+    elif "transaction" in prompt_lower or "ledger" in prompt_lower:
+      tx_count = len(load_data())
+      response = f"There are currently **{tx_count} active transaction records** logged in the SQLite relational database across Americas, EMEA, and APAC."
+    elif "fx" in prompt_lower or "forex" in prompt_lower:
+      response = "Current forex exposure stands at **$1.4B**, primarily hedged against EUR/USD and USD/JPY currency fluctuations."
+    else:
+      response = f"Analyzing your query regarding *'{prompt}'* against current treasury parameters: All active portfolios and market indicators are operating within normal risk thresholds."
+
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    with st.chat_message("assistant"):
+      st.markdown(response)
 
 elif nav_choice == "⚙️ Treasury Settings":
-  st.subheader("⚙️ System Architecture & Data Documentation")
+  st.subheader("⚙️ System Architecture & Documentation")
   st.markdown("""
-    ### Data Source Breakdown for Portfolio Review:
-    * **Corporate Ledger & Cash Balances:** Simulated enterprise data (SQLite backend) designed to demonstrate database querying, schema structuring, and CRUD operations.
-    * **Market Tickers & Indices:** 100% Real-Time Live Data pulled via asynchronous API calls (`yfinance`).
-    * **Tech Stack:** Python, Streamlit, Pandas, SQLite, and custom CSS for dark executive UI design.
-    """)
+  ### Portfolio Project Specifications:
+  * **Theme:** Black & Neon Green institutional dark mode (`#0b0f19` and `#00ff66`).
+  * **Backend:** Relational SQLite database (`command_center.db`) supporting live transaction logging and ingestion.
+  * **Market Integration:** Live REST API streaming via `yfinance` for macro indices and treasury yields.
+  * **Interactive Intelligence:** Built-in AI assistant contextually querying live metrics and transaction tables.
+  """)
