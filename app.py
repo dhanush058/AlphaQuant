@@ -77,22 +77,23 @@ st.markdown(
 
 
 # ==========================================
-# CRICKET ANALYTICS RELATIONAL DATABASE (ALL TEST NATIONS)
+# CRICKET ANALYTICS RELATIONAL DATABASE (AUTO-SCHEMA MIGRATION)
 # ==========================================
 def init_cricket_db():
   conn = sqlite3.connect("stump_metrics.db")
   cursor = conn.cursor()
+  
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS player_match_logs (
-            match_id TEXT,
+            match_id TEXT PRIMARY KEY,
             player_name TEXT,
             team TEXT,
             opposition TEXT,
             format TEXT,
             runs_scored INTEGER,
             balls_faced INTEGER,
-            fours INTEGER,
-            sixes INTEGER,
+            fours INTEGER DEFAULT 0,
+            sixes INTEGER DEFAULT 0,
             wickets_taken INTEGER,
             economy_rate REAL,
             performance_status TEXT,
@@ -100,9 +101,17 @@ def init_cricket_db():
         )
     """)
 
+  # Migration logic: Ensure existing tables get 'fours' and 'sixes' columns
+  cursor.execute("PRAGMA table_info(player_match_logs)")
+  existing_cols = [col[1] for col in cursor.fetchall()]
+  
+  if "fours" not in existing_cols:
+    cursor.execute("ALTER TABLE player_match_logs ADD COLUMN fours INTEGER DEFAULT 0")
+  if "sixes" not in existing_cols:
+    cursor.execute("ALTER TABLE player_match_logs ADD COLUMN sixes INTEGER DEFAULT 0")
+
   cursor.execute("SELECT COUNT(*) FROM player_match_logs")
   if cursor.fetchone()[0] == 0:
-    # All 12 ICC Test Playing Nations represented
     test_nations = [
         ("Virat Kohli", "India", "ODI"),
         ("Kane Williamson", "New Zealand", "Test"),
@@ -123,18 +132,9 @@ def init_cricket_db():
     ]
 
     all_teams = [
-        "India",
-        "Australia",
-        "England",
-        "Pakistan",
-        "South Africa",
-        "New Zealand",
-        "Sri Lanka",
-        "Bangladesh",
-        "West Indies",
-        "Afghanistan",
-        "Ireland",
-        "Zimbabwe",
+        "India", "Australia", "England", "Pakistan", "South Africa",
+        "New Zealand", "Sri Lanka", "Bangladesh", "West Indies",
+        "Afghanistan", "Ireland", "Zimbabwe"
     ]
 
     base_date = datetime.now() - timedelta(days=45)
@@ -145,23 +145,17 @@ def init_cricket_db():
       player, team, fmt = random.choice(test_nations)
       opposition = random.choice([t for t in all_teams if t != team])
 
-      runs = (
-          random.randint(0, 140) if fmt != "Test" else random.randint(10, 210)
-      )
+      runs = random.randint(0, 140) if fmt != "Test" else random.randint(10, 210)
       balls = max(1, int(runs * random.uniform(0.65, 1.35)))
       fours = max(0, int(runs * random.uniform(0.1, 0.25) / 4))
       sixes = max(0, int(runs * random.uniform(0.02, 0.1) / 6))
       wickets = (
           random.randint(0, 5)
-          if "Bumrah" in player
-          or "Cummins" in player
-          or "Afridi" in player
-          or "Boult" in player
+          if any(b in player for b in ["Bumrah", "Cummins", "Afridi", "Boult"])
           else random.randint(0, 2)
       )
       economy = round(random.uniform(3.8, 8.9), 2)
 
-      # Data Analysis Outlier / Performance Logic
       strike_rate = (runs / balls) * 100
       if strike_rate > 150 or runs > 100:
         status = "🔥 Elite Outlier (Match Winner)"
@@ -172,19 +166,8 @@ def init_cricket_db():
 
       m_date = (base_date + timedelta(days=i * 0.3)).strftime("%Y-%m-%d")
       records.append((
-          m_id,
-          player,
-          team,
-          opposition,
-          fmt,
-          runs,
-          balls,
-          fours,
-          sixes,
-          wickets,
-          economy,
-          status,
-          m_date,
+          m_id, player, team, opposition, fmt, runs, balls, fours, sixes,
+          wickets, economy, status, m_date,
       ))
 
     cursor.executemany(
@@ -208,6 +191,11 @@ def load_cricket_data():
   df = pd.read_sql_query("SELECT * FROM player_match_logs", conn)
   conn.close()
   df["match_date"] = pd.to_datetime(df["match_date"])
+  # Fill NaN values for fours/sixes if any nulls exist from old rows
+  if "fours" in df.columns:
+    df["fours"] = df["fours"].fillna(0)
+  if "sixes" in df.columns:
+    df["sixes"] = df["sixes"].fillna(0)
   return df
 
 
@@ -264,7 +252,12 @@ total_runs_scored = df["runs_scored"].sum()
 overall_strike_rate = round(
     (df["runs_scored"].sum() / max(1, df["balls_faced"].sum())) * 100, 1
 )
-total_boundaries = (df["fours"] * 4 + df["sixes"] * 6).sum()
+
+# Safe boundary metric calculation
+fours_count = df["fours"].sum() if "fours" in df.columns else 0
+sixes_count = df["sixes"].sum() if "sixes" in df.columns else 0
+total_boundaries = (fours_count * 4) + (sixes_count * 6)
+
 boundary_percentage = (
     round((total_boundaries / max(1, total_runs_scored)) * 100, 1)
     if total_runs_scored > 0
@@ -272,26 +265,10 @@ boundary_percentage = (
 )
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric(
-    "Match Logs Analyzed",
-    f"{total_innings:,}",
-    delta="Relational SQL Records",
-)
-k2.metric(
-    "Cumulative Runs Logged",
-    f"{total_runs_scored:,}",
-    delta="Dataset Volume",
-)
-k3.metric(
-    "Aggregate Strike Rate",
-    f"{overall_strike_rate}%",
-    delta="Scoring Efficiency",
-)
-k4.metric(
-    "Boundary Contribution",
-    f"{boundary_percentage}%",
-    delta="Power Hit Index",
-)
+k1.metric("Match Logs Analyzed", f"{total_innings:,}", delta="Relational SQL Records")
+k2.metric("Cumulative Runs Logged", f"{total_runs_scored:,}", delta="Dataset Volume")
+k3.metric("Aggregate Strike Rate", f"{overall_strike_rate}%", delta="Scoring Efficiency")
+k4.metric("Boundary Contribution", f"{boundary_percentage}%", delta="Power Hit Index")
 
 st.markdown("---")
 
@@ -304,9 +281,7 @@ tab_sql, tab_outliers, tab_live, tab_ingest = st.tabs([
 ])
 
 with tab_sql:
-  st.subheader(
-      f"Relational Database Records — {selected_team}"
-  )
+  st.subheader(f"Relational Database Records — {selected_team}")
   st.markdown(
       "Querying live match logs filtered by international formats and"
       " performance classifications."
@@ -314,12 +289,11 @@ with tab_sql:
 
   col_f1, col_f2 = st.columns(2)
   with col_f1:
-    f_format = st.selectbox(
-        "Filter Format", ["All Formats", "Test", "ODI", "T20I"]
-    )
+    f_format = st.selectbox("Filter Format", ["All Formats", "Test", "ODI", "T20I"])
   with col_f2:
     f_status = st.selectbox(
-        "Filter Performance Tier", ["All Tiers", "🔥 Elite Outlier (Match Winner)", "✅ Baseline Standard", "⚠️ Performance Slump (Review)"]
+        "Filter Performance Tier",
+        ["All Tiers", "🔥 Elite Outlier (Match Winner)", "✅ Baseline Standard", "⚠️ Performance Slump (Review)"],
     )
 
   filtered_df = df.copy()
@@ -388,15 +362,9 @@ with tab_ingest:
       p_opp = st.text_input("Opposition Team", "Australia")
       p_fmt = st.selectbox("Match Format", ["ODI", "T20I", "Test"])
     with col_i2:
-      p_runs = st.number_input(
-          "Runs Scored", min_value=0, max_value=300, value=85
-      )
-      p_balls = st.number_input(
-          "Balls Faced", min_value=1, max_value=350, value=65
-      )
-      p_wickets = st.number_input(
-          "Wickets Taken", min_value=0, max_value=10, value=0
-      )
+      p_runs = st.number_input("Runs Scored", min_value=0, max_value=300, value=85)
+      p_balls = st.number_input("Balls Faced", min_value=1, max_value=350, value=65)
+      p_wickets = st.number_input("Wickets Taken", min_value=0, max_value=10, value=0)
 
     submit_record = st.form_submit_button("Commit Scorecard to SQL Database")
 
