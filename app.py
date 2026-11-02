@@ -26,7 +26,6 @@ st.markdown(
         background-color: #0b0f19;
         color: #f3f4f6;
     }
-    /* Metric Cards with Neon Green Glow */
     div[data-testid="stMetric"] {
         background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
         border: 1px solid #374151;
@@ -71,11 +70,12 @@ st.markdown(
 
 
 # ==========================================
-# SQL DATABASE INITIALIZATION
+# SQL DATABASE INITIALIZATION & 6-REGION MIGRATION
 # ==========================================
 def init_db():
   conn = sqlite3.connect("command_center.db")
   cursor = conn.cursor()
+  
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS sql_transactions (
             transaction_id TEXT PRIMARY KEY,
@@ -87,14 +87,26 @@ def init_db():
             status TEXT
         )
     """)
+  
+  try:
+    cursor.execute("ALTER TABLE sql_transactions ADD COLUMN entity_region TEXT DEFAULT 'North America'")
+  except Exception:
+    pass
+
+  try:
+    cursor.execute("ALTER TABLE sql_transactions ADD COLUMN status TEXT DEFAULT 'CONFIRMED'")
+  except Exception:
+    pass
+
   cursor.execute("SELECT COUNT(*) FROM sql_transactions")
   if cursor.fetchone()[0] == 0:
     sample_txs = [
-        ("TXM-9021", "2026-11-02 21:03:07", "Americas (US)", "PAYMENT FROM CLIENT A", 0.0, 120500.0, "CONFIRMED"),
-        ("TXM-9020", "2026-11-02 21:03:00", "EMEA (Europe)", "UTILITY BILL PAYMENT", 15200.0, 0.0, "PROCESSING"),
-        ("TXN-9019", "2026-11-02 21:03:00", "APAC (Singapore)", "PAYMENT FROM CLIENT A", 0.0, 15500.0, "PROCESSING"),
-        ("TXN-9018", "2026-11-02 21:00:15", "EMEA (Europe)", "SWIFT WIRE TRANSFER", 450000.0, 0.0, "CONFIRMED"),
-        ("TXN-9017", "2026-11-02 20:55:40", "APAC (Singapore)", "VENDOR SETTLEMENT", 82300.0, 0.0, "CONFIRMED"),
+        ("TXN-NorthAmerica-1", "2026-11-02 21:03:07", "North America", "CLIENT SETTLEMENT - NY", 0.0, 120500.0, "CONFIRMED"),
+        ("TXN-Europe-2", "2026-11-02 21:03:00", "Europe", "EUROCLEAR LIQUIDITY TRANSFER", 15200.0, 0.0, "PROCESSING"),
+        ("TXN-Asia-3", "2026-11-02 21:03:00", "Asia", "TOKYO HUB VENDOR PAYOUT", 45000.0, 0.0, "CONFIRMED"),
+        ("TXN-MENA-4", "2026-11-02 21:00:15", "MENA", "DUBAI TREASURY REVENUE SWIFT", 0.0, 450000.0, "CONFIRMED"),
+        ("TXN-Oceania-5", "2026-11-02 20:55:40", "Oceania", "SYDNEY ASSET SETTLEMENT", 82300.0, 0.0, "PROCESSING"),
+        ("TXN-SouthAmerica-6", "2026-11-02 20:50:10", "South America", "SÃO PAULO OPERATING EXPENSE", 18900.0, 0.0, "CONFIRMED"),
     ]
     cursor.executemany("INSERT OR IGNORE INTO sql_transactions VALUES (?, ?, ?, ?, ?, ?, ?)", sample_txs)
   conn.commit()
@@ -106,8 +118,17 @@ init_db()
 
 def load_data():
   conn = sqlite3.connect("command_center.db")
-  df = pd.read_sql_query("SELECT * FROM sql_transactions ORDER BY timestamp DESC", conn)
+  try:
+    df = pd.read_sql_query("SELECT * FROM sql_transactions ORDER BY timestamp DESC", conn)
+  except Exception:
+    df = pd.DataFrame(columns=["transaction_id", "timestamp", "entity_region", "description", "debit", "credit", "status"])
   conn.close()
+
+  if "entity_region" not in df.columns:
+    df["entity_region"] = "North America"
+  if "status" not in df.columns:
+    df["status"] = "CONFIRMED"
+    
   return df
 
 
@@ -128,7 +149,7 @@ def fetch_market_data():
 market_df = fetch_market_data()
 
 # ==========================================
-# SIDEBAR NAVIGATION & INTERACTIVE FILTERS
+# SIDEBAR NAVIGATION & 6-REGION FILTERS
 # ==========================================
 st.sidebar.markdown("### 🏦 Aegis Command")
 st.sidebar.markdown("---")
@@ -144,8 +165,11 @@ nav_choice = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🌐 Global Filters")
-selected_region = st.sidebar.selectbox("Filter Region", ["All Regions", "Americas (US)", "EMEA (Europe)", "APAC (Singapore)"])
+st.sidebar.subheader("🌐 Global Territory Filters")
+selected_region = st.sidebar.selectbox(
+    "Filter Region", 
+    ["All Global Regions", "North America", "Europe", "Asia", "MENA", "Oceania", "South America"]
+)
 currency_mode = st.sidebar.selectbox("Currency Display", ["USD ($)", "EUR (€)", "GBP (£)", "AED (د.إ)", "JPY (¥)"])
 selected_status = st.sidebar.selectbox("Transaction Status", ["All Statuses", "CONFIRMED", "PROCESSING"])
 
@@ -158,9 +182,9 @@ fx_symbol = {"USD ($)": "$", "EUR (€)": "€", "GBP (£)": "£", "AED (د.إ)"
 mult = fx_rates[currency_mode]
 sym = fx_symbol[currency_mode]
 
-# Load and filter main dataset
+# Load and filter main dataset safely
 df = load_data()
-if selected_region != "All Regions":
+if selected_region != "All Global Regions":
   df = df[df["entity_region"] == selected_region]
 if selected_status != "All Statuses":
   df = df[df["status"] == selected_status]
@@ -174,7 +198,7 @@ if nav_choice == "📊 Executive Command Center":
         <div class="command-header">
             <h2 style="margin:0; color:#ffffff; font-size: 1.5rem;">🌐 GLOBAL TREASURY COMMAND CENTER</h2>
             <div style="font-size: 0.85rem; color: #00ff66; font-weight: 600;">
-                REGION: {selected_region} &nbsp;|&nbsp; CURRENCY: {currency_mode}
+                TERRITORY: {selected_region} &nbsp;|&nbsp; CURRENCY: {currency_mode}
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -218,7 +242,7 @@ if nav_choice == "📊 Executive Command Center":
 
   st.markdown("---")
 
-  # Bottom Section
+  # Bottom Section (All 6 Regions represented in bar chart)
   b1, b2 = st.columns([2, 1])
   with b1:
     st.subheader("📋 Filtered SQL Transaction Ledger")
@@ -228,24 +252,27 @@ if nav_choice == "📊 Executive Command Center":
     st.dataframe(display_df, use_container_width=True, hide_index=True)
 
   with b2:
-    st.subheader("📊 Revenue by Region")
+    st.subheader("📊 Revenue by Global Region")
     region_data = pd.DataFrame({
-        "Region": ["Americas", "EMEA", "APAC", "LatAm"],
-        "Revenue": [550*mult, 420*mult, 390*mult, 310*mult]
+        "Region": ["North America", "Europe", "Asia", "MENA", "Oceania", "South America"],
+        "Revenue ($M)": [580*mult, 460*mult, 410*mult, 340*mult, 290*mult, 210*mult]
     }).set_index("Region")
     st.bar_chart(region_data, height=240)
 
 elif nav_choice == "📋 SQL Transaction Ledger":
   st.subheader("📋 Relational SQL Transaction Database Manager")
-  st.markdown("Query, inspect, and insert new corporate ledger records into the SQLite database.")
+  st.markdown("Query, inspect, and insert new corporate ledger records across all 6 global territories into the SQLite database.")
 
   with st.form("new_trade_form"):
     st.markdown("### ⚡ Execute & Commit New Treasury Transaction")
     col_f1, col_f2 = st.columns(2)
     with col_f1:
       t_id = f"TXN-{random.randint(8000, 9999)}"
-      t_reg = st.selectbox("Entity Region", ["Americas (US)", "EMEA (Europe)", "APAC (Singapore)"])
-      t_desc = st.text_input("Description", "CLIENT SETTLEMENT WIRE")
+      t_reg = st.selectbox(
+          "Entity Region", 
+          ["North America", "Europe", "Asia", "MENA", "Oceania", "South America"]
+      )
+      t_desc = st.text_input("Description", "GLOBAL SETTLEMENT WIRE")
     with col_f2:
       t_type = st.selectbox("Transaction Type", ["Credit (Incoming)", "Debit (Outgoing)"])
       t_amt = st.number_input("Amount ($ USD)", min_value=100.0, value=50000.0)
@@ -262,7 +289,7 @@ elif nav_choice == "📋 SQL Transaction Ledger":
                   (t_id, now_str, t_reg, t_desc, debit_val, credit_val, "CONFIRMED"))
       conn.commit()
       conn.close()
-      st.success(f"Successfully committed transaction {t_id}!")
+      st.success(f"Successfully committed transaction {t_id} for {t_reg}!")
       st.rerun()
 
   st.markdown("---")
@@ -280,32 +307,32 @@ elif nav_choice == "⚡ Live API Analytics":
 
 elif nav_choice == "🤖 Aegis AI Assistant":
   st.subheader("🤖 Aegis AI Treasury Assistant")
-  st.markdown("Ask natural language questions about your cash positions, transaction logs, forex exposure, or risk metrics.")
+  st.markdown("Ask natural language questions about your cash positions, 6-region transaction logs, forex exposure, or risk metrics.")
 
   if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Hello! I am your Aegis AI Treasury Assistant. How can I assist you with your cash flow or portfolio analytics today?"}
+        {"role": "assistant", "content": "Hello! I am your Aegis AI Treasury Assistant. How can I assist you with your multi-region cash flow or global portfolio analytics today?"}
     ]
 
   for message in st.session_state.messages:
     with st.chat_message(message["role"]):
       st.markdown(message["content"])
 
-  if prompt := st.chat_input("Ask about cash balance, FX risk, or SQL transactions..."):
+  if prompt := st.chat_input("Ask about cash balance, regional exposure, or SQL transactions..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
       st.markdown(prompt)
 
     prompt_lower = prompt.lower()
     if "cash" in prompt_lower or "balance" in prompt_lower:
-      response = "Your current global cash on hand is **$78.2M**, with an operating cash flow of **$25M** (+4.3% growth)."
+      response = "Your current global cash on hand across all 6 regions is **$78.2M**, with an operating cash flow of **$25M** (+4.3% growth)."
     elif "transaction" in prompt_lower or "ledger" in prompt_lower:
       tx_count = len(load_data())
-      response = f"There are currently **{tx_count} active transaction records** logged in the SQLite relational database across Americas, EMEA, and APAC."
-    elif "fx" in prompt_lower or "forex" in prompt_lower:
-      response = "Current forex exposure stands at **$1.4B**, primarily hedged against EUR/USD and USD/JPY currency fluctuations."
+      response = f"There are currently **{tx_count} active transaction records** logged in the SQLite database spanning North America, Europe, Asia, MENA, Oceania, and South America."
+    elif "region" in prompt_lower or "mena" in prompt_lower or "asia" in prompt_lower:
+      response = "Regional revenue distribution is active across all 6 territories, led by North America and Europe, with strong liquidity hubs in MENA and Asia."
     else:
-      response = f"Analyzing your query regarding *'{prompt}'* against current treasury parameters: All active portfolios and market indicators are operating within normal risk thresholds."
+      response = f"Analyzing your query regarding *'{prompt}'* against global treasury parameters: All multi-region portfolios and market indicators are operating within normal risk thresholds."
 
     st.session_state.messages.append({"role": "assistant", "content": response})
     with st.chat_message("assistant"):
@@ -315,8 +342,9 @@ elif nav_choice == "⚙️ Treasury Settings":
   st.subheader("⚙️ System Architecture & Documentation")
   st.markdown("""
   ### Portfolio Project Specifications:
+  * **Global Coverage:** Full multi-region support across **North America, Europe, Asia, MENA, Oceania, and South America**.
   * **Theme:** Black & Neon Green institutional dark mode (`#0b0f19` and `#00ff66`).
   * **Backend:** Relational SQLite database (`command_center.db`) supporting live transaction logging and ingestion.
   * **Market Integration:** Live REST API streaming via `yfinance` for macro indices and treasury yields.
-  * **Interactive Intelligence:** Built-in AI assistant contextually querying live metrics and transaction tables.
+  * **Interactive Intelligence:** Built-in AI assistant contextually querying live metrics and multi-region transaction tables.
   """)
