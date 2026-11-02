@@ -1,21 +1,17 @@
-# Python bytecode and caches
+# Python bytecode and cache
 __pycache__/
 *.py[cod]
 *$py.class
 
 # Virtual environments
-.venv/
-env/
 venv/
+env/
+ENV/
 
-# Local SQLite Databases (prevents local test data from bloating git history)
+# Local SQLite databases (keeps production clean)
 *.db
 *.sqlite
 *.sqlite3
 
-# Streamlit secrets and configs
+# Streamlit local configuration
 .streamlit/secrets.toml
-
-# OS specific files
-.DS_Store
-Thumbs.db
