@@ -2,13 +2,16 @@ from datetime import datetime, timedelta
 import random
 import sqlite3
 import pandas as pd
+import requests
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 import yfinance as yf
 
 # Page Configuration
 st.set_page_config(
-    page_title="StumpMetrics: Player Intelligence", page_icon="🏏", layout="wide"
+    page_title="StumpMetrics: Live Cricket Intelligence",
+    page_icon="🏏",
+    layout="wide",
 )
 
 # Auto-refresh live feed every 60 seconds
@@ -97,10 +100,9 @@ def init_cricket_db():
         )
     """)
 
-  # Ensure all necessary columns exist for role-based analytics
   cursor.execute("PRAGMA table_info(player_match_logs)")
   existing_cols = [col[1] for col in cursor.fetchall()]
-  
+
   migrations = [
       ("player_role", "TEXT DEFAULT 'Batter'"),
       ("fours", "INTEGER DEFAULT 0"),
@@ -111,11 +113,13 @@ def init_cricket_db():
   ]
   for col_name, col_def in migrations:
     if col_name not in existing_cols:
-      cursor.execute(f"ALTER TABLE player_match_logs ADD COLUMN {col_name} {col_def}")
+      cursor.execute(
+          f"ALTER TABLE player_match_logs ADD COLUMN {col_name} {col_def}"
+      )
 
   cursor.execute("SELECT COUNT(*) FROM player_match_logs")
   if cursor.fetchone()[0] == 0:
-    # All 12 ICC Test Nations roster with role assignment
+    # All 12 ICC Test Nations representation
     test_nations_roster = [
         ("Virat Kohli", "India", "Batter", "ODI"),
         ("Jasprit Bumrah", "India", "Bowler", "Test"),
@@ -137,48 +141,82 @@ def init_cricket_db():
     ]
 
     all_teams = [
-        "India", "Australia", "England", "Pakistan", "South Africa",
-        "New Zealand", "Sri Lanka", "Bangladesh", "West Indies",
-        "Afghanistan", "Ireland", "Zimbabwe"
+        "India",
+        "Australia",
+        "England",
+        "Pakistan",
+        "South Africa",
+        "New Zealand",
+        "Sri Lanka",
+        "Bangladesh",
+        "West Indies",
+        "Afghanistan",
+        "Ireland",
+        "Zimbabwe",
     ]
 
-    base_date = datetime.now() - timedelta(days=90)
+    base_date = datetime.now() - timedelta(days=120)
     records = []
 
-    for i in range(1, 300):
-      m_id = f"MATCH-2026-{i:03d}"
+    for i in range(1, 350):
+      m_id = f"MATCH-SYS-{i:03d}"
       player, team, role, fmt = random.choice(test_nations_roster)
       opposition = random.choice([t for t in all_teams if t != team])
 
       if role in ["Batter", "All-Rounder"]:
-        runs = random.randint(0, 140) if fmt != "Test" else random.randint(8, 210)
-        balls = max(1, int(runs * random.uniform(0.65, 1.35)))
+        runs = (
+            random.randint(0, 145) if fmt != "Test" else random.randint(10, 220)
+        )
+        balls = max(1, int(runs * random.uniform(0.65, 1.4)))
         fours = max(0, int(runs * random.uniform(0.1, 0.25) / 4))
         sixes = max(0, int(runs * random.uniform(0.02, 0.1) / 6))
       else:
         runs, balls, fours, sixes = 0, 0, 0, 0
 
       if role in ["Bowler", "All-Rounder"]:
-        overs = round(random.uniform(2.0, 10.0), 1) if fmt != "Test" else round(random.uniform(8.0, 25.0), 1)
+        overs = (
+            round(random.uniform(2.0, 10.0), 1)
+            if fmt != "Test"
+            else round(random.uniform(8.0, 28.0), 1)
+        )
         runs_conc = int(overs * random.uniform(3.2, 8.5))
-        wickets = random.randint(0, 5) if random.random() > 0.3 else random.randint(0, 2)
+        wickets = (
+            random.randint(0, 5) if random.random() > 0.3 else random.randint(0, 2)
+        )
         economy = round(runs_conc / max(0.1, overs), 2)
       else:
         overs, runs_conc, wickets, economy = 0.0, 0, 0, 0.0
 
-      # Outlier Detection Logic
       strike_rate = (runs / balls * 100) if balls > 0 else 0
       if strike_rate > 150 or runs >= 100 or wickets >= 4:
         status = "🔥 Elite Match-Winning Performance"
-      elif (strike_rate < 50 and runs < 10 and role != "Bowler") or (economy > 9.5 and role != "Batter"):
+      elif (
+          strike_rate < 50
+          and runs < 10
+          and role != "Bowler"
+      ) or (economy > 9.5 and role != "Batter"):
         status = "⚠️ Slump / Underperformance"
       else:
         status = "✅ Stable Baseline"
 
-      m_date = (base_date + timedelta(days=i * 0.3)).strftime("%Y-%m-%d")
+      m_date = (base_date + timedelta(days=i * 0.35)).strftime("%Y-%m-%d")
       records.append((
-          m_id, player, team, role, opposition, fmt, runs, balls, fours, sixes,
-          overs, runs_conc, wickets, economy, status, m_date
+          m_id,
+          player,
+          team,
+          role,
+          opposition,
+          fmt,
+          runs,
+          balls,
+          fours,
+          sixes,
+          overs,
+          runs_conc,
+          wickets,
+          economy,
+          status,
+          m_date,
       ))
 
     cursor.executemany(
@@ -209,23 +247,42 @@ df = load_cricket_data()
 
 
 # ==========================================
-# LIVE BROADCAST & STREAMING API (YFINANCE)
+# LIVE API PIPELINE INTEGRATION
 # ==========================================
-@st.cache_data(ttl=3600)
-def fetch_live_market_stream():
-  tickers = ["^GSPC", "^IXIC"]
-  data = yf.download(tickers, period="5d", progress=False)["Close"]
-  return data
+@st.cache_data(ttl=600)
+def fetch_live_cricket_api_data():
+  """Demonstrates live REST API ingestion using requests.
+
+  Safely handles cases where API keys are configured in Streamlit Secrets.
+  """
+  try:
+    if "CRIC_API_KEY" in st.secrets:
+      url = "https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live"
+      headers = {
+          "X-RapidAPI-Key": st.secrets["CRIC_API_KEY"],
+          "X-RapidAPI-Host": "cricbuzz-cricket.p.rapidapi.com",
+      }
+      response = requests.get(url, headers=headers, timeout=5)
+      if response.status_code == 200:
+        return response.json(), "Live API Connected Successfully 🟢"
+    return (
+        None,
+        "Running on Local SQL Pipeline (Add CRIC_API_KEY in Secrets for Live"
+        " API Feed)",
+    )
+  except Exception as e:
+    return None, f"API Connection Status: {str(e)}"
 
 
-market_data = fetch_live_market_stream()
+api_data, api_status_message = fetch_live_cricket_api_data()
 
 # ==========================================
 # DASHBOARD HEADER & PLAYER SELECTION SIDEBAR
 # ==========================================
-st.title("🏏 StumpMetrics: Player Intelligence & Career Analytics")
+st.title("🏏 StumpMetrics: Live Player Intelligence & Data Pipeline")
 st.markdown(
-    "**Role-Adaptive Data Intelligence Platform** | Deep-Dive SQL Career Logs, Role-Based Analytics (Batting/Bowling), & Performance Outliers."
+    "**Production-Grade Data Analyst Portfolio Project** | Live REST API"
+    " Ingestion, Role-Adaptive SQL Architecture, & Automated Outlier Detection."
 )
 st.markdown("---")
 
@@ -236,25 +293,35 @@ selected_player = st.sidebar.selectbox("Player Selection", available_players)
 # Filter dataframe strictly for the selected player
 player_df = df[df["player_name"] == selected_player]
 player_team = player_df["team"].iloc[0] if not player_df.empty else "Unknown"
-player_role = player_df["player_role"].iloc[0] if not player_df.empty else "Batter"
+player_role = (
+    player_df["player_role"].iloc[0] if not player_df.empty else "Batter"
+)
 
 st.sidebar.markdown(f"**National Team:** {player_team}")
 st.sidebar.markdown(f"**Primary Role:** `{player_role}`")
 st.sidebar.markdown("---")
-st.sidebar.subheader("🌐 Global Stream Status")
-st.sidebar.success("🟢 Live Broadcast Feed Synced")
+st.sidebar.subheader("🌐 Pipeline & API Status")
+st.sidebar.info(api_status_message)
 
 # ==========================================
 # DYNAMIC ROLE-BASED METRIC CARDS (KPIs)
 # ==========================================
 total_matches_played = len(player_df)
 
-st.subheader(f"📊 Career Profile KPI Summary: {selected_player} ({player_team} — {player_role})")
+st.subheader(
+    f"📊 Career Profile KPI Summary: {selected_player} ({player_team} —"
+    f" {player_role})"
+)
 
 if player_role == "Batter":
   player_runs_career = player_df["runs_scored"].sum()
-  player_batting_avg = round(player_runs_career / max(1, len(player_df[player_df["runs_scored"] > 0])), 1)
-  player_strike_rate = round((player_runs_career / max(1, player_df["balls_faced"].sum())) * 100, 1)
+  player_batting_avg = round(
+      player_runs_career / max(1, len(player_df[player_df["runs_scored"] > 0])),
+      1,
+  )
+  player_strike_rate = round(
+      (player_runs_career / max(1, player_df["balls_faced"].sum())) * 100, 1
+  )
   centuries_count = len(player_df[player_df["runs_scored"] >= 100])
 
   c1, c2, c3, c4, c5 = st.columns(5)
@@ -282,7 +349,10 @@ elif player_role == "Bowler":
 else:  # All-Rounder
   player_runs_career = player_df["runs_scored"].sum()
   total_wickets = player_df["wickets_taken"].sum()
-  player_batting_avg = round(player_runs_career / max(1, len(player_df[player_df["runs_scored"] > 0])), 1)
+  player_batting_avg = round(
+      player_runs_career / max(1, len(player_df[player_df["runs_scored"] > 0])),
+      1,
+  )
   total_overs = player_df["overs_bowled"].sum()
   total_runs_conceded = player_df["runs_conceded"].sum()
   career_economy = round(total_runs_conceded / max(0.1, total_overs), 2)
@@ -299,30 +369,67 @@ st.markdown("---")
 # ==========================================
 # PLAYER ANALYTICAL TABS
 # ==========================================
-tab_logs, tab_trends, tab_oppo, tab_ingest = st.tabs([
+tab_logs, tab_trends, tab_oppo, tab_api, tab_ingest = st.tabs([
     "📋 Player Match Log History",
     "📈 Performance & Form Trends",
     "🎯 Opposition Analysis",
+    "🔌 Live API Payload Inspector",
     "⚡ Add Match Scorecard",
 ])
 
 with tab_logs:
   st.subheader(f"SQL Match Database — {selected_player}")
-  st.markdown("Filterable record breakdown showing performance indicators adapted to player role.")
+  st.markdown(
+      "Filterable record breakdown showing performance indicators adapted to"
+      " player role."
+  )
 
-  f_format = st.selectbox("Filter Match Format", ["All Formats", "Test", "ODI", "T20I"], key="fmt_filter")
+  f_format = st.selectbox(
+      "Filter Match Format",
+      ["All Formats", "Test", "ODI", "T20I"],
+      key="fmt_filter",
+  )
   filtered_logs = player_df.copy()
   if f_format != "All Formats":
     filtered_logs = filtered_logs[filtered_logs["format"] == f_format]
 
   if player_role == "Batter":
-    cols = ["match_date", "format", "opposition", "runs_scored", "balls_faced", "fours", "sixes", "performance_status"]
+    cols = [
+        "match_date",
+        "format",
+        "opposition",
+        "runs_scored",
+        "balls_faced",
+        "fours",
+        "sixes",
+        "performance_status",
+    ]
   elif player_role == "Bowler":
-    cols = ["match_date", "format", "opposition", "overs_bowled", "runs_conceded", "wickets_taken", "economy_rate", "performance_status"]
+    cols = [
+        "match_date",
+        "format",
+        "opposition",
+        "overs_bowled",
+        "runs_conceded",
+        "wickets_taken",
+        "economy_rate",
+        "performance_status",
+    ]
   else:
-    cols = ["match_date", "format", "opposition", "runs_scored", "wickets_taken", "economy_rate", "performance_status"]
+    cols = [
+        "match_date",
+        "format",
+        "opposition",
+        "runs_scored",
+        "wickets_taken",
+        "economy_rate",
+        "performance_status",
+    ]
 
-  st.dataframe(filtered_logs[cols].sort_values(by="match_date", ascending=False), use_container_width=True)
+  st.dataframe(
+      filtered_logs[cols].sort_values(by="match_date", ascending=False),
+      use_container_width=True,
+  )
 
 with tab_trends:
   st.subheader(f"Form & Outlier Tracking — {selected_player}")
@@ -338,41 +445,76 @@ with tab_trends:
       st.bar_chart(chart_data)
     else:
       st.markdown("### Dual Impact Trend (Runs & Wickets)")
-      st.line_chart(player_df.set_index("match_date")[["runs_scored", "wickets_taken"]])
+      st.line_chart(
+          player_df.set_index("match_date")[["runs_scored", "wickets_taken"]]
+      )
 
     st.markdown("### 🔥 Highlighted Standout Innings")
-    outliers = player_df[player_df["performance_status"] == "🔥 Elite Match-Winning Performance"]
+    outliers = player_df[
+        player_df["performance_status"] == "🔥 Elite Match-Winning Performance"
+    ]
     if not outliers.empty:
       st.dataframe(outliers, use_container_width=True)
     else:
       st.info("No standout elite performances flagged in the current window.")
 
 with tab_oppo:
-  st.subheader("Opposition Breakdown")
+  st.subheader("Opposition Analysis")
 
   if not player_df.empty:
     if player_role == "Batter":
-      oppo_agg = player_df.groupby("opposition").agg(
-          Matches=("match_id", "count"),
-          Total_Runs=("runs_scored", "sum"),
-          Avg_Runs=("runs_scored", "mean")
-      ).reset_index()
+      oppo_agg = (
+          player_df.groupby("opposition")
+          .agg(
+              Matches=("match_id", "count"),
+              Total_Runs=("runs_scored", "sum"),
+              Avg_Runs=("runs_scored", "mean"),
+          )
+          .reset_index()
+      )
       oppo_agg["Avg_Runs"] = oppo_agg["Avg_Runs"].round(1)
     elif player_role == "Bowler":
-      oppo_agg = player_df.groupby("opposition").agg(
-          Matches=("match_id", "count"),
-          Total_Wickets=("wickets_taken", "sum"),
-          Avg_Economy=("economy_rate", "mean")
-      ).reset_index()
+      oppo_agg = (
+          player_df.groupby("opposition")
+          .agg(
+              Matches=("match_id", "count"),
+              Total_Wickets=("wickets_taken", "sum"),
+              Avg_Economy=("economy_rate", "mean"),
+          )
+          .reset_index()
+      )
       oppo_agg["Avg_Economy"] = oppo_agg["Avg_Economy"].round(2)
     else:
-      oppo_agg = player_df.groupby("opposition").agg(
-          Matches=("match_id", "count"),
-          Total_Runs=("runs_scored", "sum"),
-          Total_Wickets=("wickets_taken", "sum")
-      ).reset_index()
+      oppo_agg = (
+          player_df.groupby("opposition")
+          .agg(
+              Matches=("match_id", "count"),
+              Total_Runs=("runs_scored", "sum"),
+              Total_Wickets=("wickets_taken", "sum"),
+          )
+          .reset_index()
+      )
 
     st.dataframe(oppo_agg, use_container_width=True)
+
+with tab_api:
+  st.subheader("Live API JSON Payload Inspector")
+  st.markdown(
+      "Inspecting raw JSON data streams ingested from external sports API"
+      " endpoints."
+  )
+  if api_data:
+    st.json(api_data)
+  else:
+    st.warning(
+        "No live JSON payload active. To connect a live API, add your API key"
+        " under Streamlit Cloud Secrets as `CRIC_API_KEY`."
+    )
+    st.info(
+        "💡 **Data Analyst Note:** This demonstrates how asynchronous REST API"
+        " calls are structured and handled cleanly within the application"
+        " pipeline."
+    )
 
 with tab_ingest:
   st.subheader(f"Commit New Scorecard for {selected_player}")
@@ -382,19 +524,47 @@ with tab_ingest:
     with col_a:
       opp_team = st.text_input("Opposition Nation", "Australia")
       match_fmt = st.selectbox("Format", ["ODI", "T20I", "Test"])
-      p_role = st.selectbox("Player Role Override", ["Batter", "Bowler", "All-Rounder"], index=["Batter", "Bowler", "All-Rounder"].index(player_role))
+      p_role = st.selectbox(
+          "Player Role Override",
+          ["Batter", "Bowler", "All-Rounder"],
+          index=["Batter", "Bowler", "All-Rounder"].index(player_role),
+      )
     with col_b:
-      runs = st.number_input("Runs Scored", min_value=0, max_value=300, value=65 if player_role != "Bowler" else 5)
-      balls = st.number_input("Balls Faced", min_value=0, max_value=350, value=50 if player_role != "Bowler" else 8)
-      overs = st.number_input("Overs Bowled", min_value=0.0, max_value=50.0, value=10.0 if player_role != "Batter" else 0.0)
-      wickets = st.number_input("Wickets Taken", min_value=0, max_value=10, value=3 if player_role != "Batter" else 0)
+      runs = st.number_input(
+          "Runs Scored",
+          min_value=0,
+          max_value=300,
+          value=65 if player_role != "Bowler" else 5,
+      )
+      balls = st.number_input(
+          "Balls Faced",
+          min_value=0,
+          max_value=350,
+          value=50 if player_role != "Bowler" else 8,
+      )
+      overs = st.number_input(
+          "Overs Bowled",
+          min_value=0.0,
+          max_value=50.0,
+          value=10.0 if player_role != "Batter" else 0.0,
+      )
+      wickets = st.number_input(
+          "Wickets Taken",
+          min_value=0,
+          max_value=10,
+          value=3 if player_role != "Batter" else 0,
+      )
 
     submit_btn = st.form_submit_button("Commit Inning to SQL Database")
 
     if submit_btn:
-      new_id = f"MATCH-2026-{random.randint(5009,9999)}"
+      new_id = f"MATCH-LIVE-{random.randint(5009,9999)}"
       sr = (runs / balls * 100) if balls > 0 else 0
-      status = "🔥 Elite Match-Winning Performance" if sr > 150 or runs >= 100 or wickets >= 4 else "✅ Stable Baseline"
+      status = (
+          "🔥 Elite Match-Winning Performance"
+          if sr > 150 or runs >= 100 or wickets >= 4
+          else "✅ Stable Baseline"
+      )
       econ = round(random.uniform(4.0, 7.0), 2) if overs > 0 else 0.0
 
       conn = sqlite3.connect("stump_metrics.db")
@@ -405,7 +575,22 @@ with tab_ingest:
             (match_id, player_name, team, player_role, opposition, format, runs_scored, balls_faced, fours, sixes, overs_bowled, runs_conceded, wickets_taken, economy_rate, performance_status, match_date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 4, 1, ?, ?, ?, ?, ?, ?)
           """,
-          (new_id, selected_player, player_team, p_role, opp_team, match_fmt, runs, balls, overs, int(overs * econ), wickets, econ, status, datetime.now().strftime("%Y-%m-%d"))
+          (
+              new_id,
+              selected_player,
+              player_team,
+              p_role,
+              opp_team,
+              match_fmt,
+              runs,
+              balls,
+              overs,
+              int(overs * econ),
+              wickets,
+              econ,
+              status,
+              datetime.now().strftime("%Y-%m-%d"),
+          ),
       )
       conn.commit()
       conn.close()
