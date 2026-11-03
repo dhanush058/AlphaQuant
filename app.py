@@ -134,7 +134,10 @@ def fetch_live_stock_data(ticker_symbol, period_str="1y"):
   ticker_symbol = ticker_symbol.strip().upper()
   url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker_symbol}?interval=1d&range={period_str}"
   headers = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      "User-Agent": (
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
+          " like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      )
   }
   try:
     response = requests.get(url, headers=headers, timeout=8)
@@ -440,13 +443,15 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
         showlegend=False,
         xaxis=dict(showgrid=True, gridcolor="#1f2937", title="Daily Return (%)"),
         yaxis=dict(
-            showgrid=True, gridcolor="#1f2937", title="Frequency (Trading Days)"
+            showgrid=True,
+            gridcolor="#1f2937",
+            title="Number of Trading Days",
         ),
     )
     fig_hist.update_traces(
         marker_color="#00f0ff",
         hovertemplate=(
-            "<b>Return Range</b>: %{x}<br><b>Trading Days (Count)</b>:"
+            "<b>Return Range</b>: %{x}<br><b>Number of Trading Days</b>:"
             " %{y}<extra></extra>"
         ),
     )
