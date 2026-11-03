@@ -262,14 +262,12 @@ if nav_choice == "📈 Price Action & Technicals":
         c2.metric(
             "Period High",
             f"${high_period:,.2f}",
-            f"{high_pct_from_peak:.2f}% from peak",
-            delta_color="off",
+            f"{high_pct_from_peak:+.2f}% from peak",
         )
         c3.metric(
             "Period Low",
             f"${low_period:,.2f}",
-            f"+{abs(low_pct_from_trough):.2f}% from trough",
-            delta_color="off",
+            f"{low_pct_from_trough:+.2f}% from trough",
         )
         c4.metric("Latest Volume", f"{total_volume:,}", "Shares Traded")
 
@@ -597,8 +595,4 @@ elif nav_choice == "📖 Analytics Guide & Overview":
     <div class="analytics-card">
         Comparing a lower-priced equity directly against a high-value technology stock or cryptocurrency breaks standard visual scaling due to nominal price discrepancies. 
         <br><br>
-        The Multi-Asset Performance module solves this by rescaling every selected asset to start at a standardized baseline index of 100 on day one. This normalization technique enables analysts and portfolio strategists to instantly evaluate relative strength, growth divergence, and sector correlation across market leaders and major benchmarks side-by-side.
-    </div>
-  """,
-        unsafe_allow_html=True,
-    )
+        The Multi-Asset Performance module solves this by rescaling every selected asset to start
