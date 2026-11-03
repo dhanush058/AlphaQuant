@@ -1,23 +1,20 @@
 from datetime import datetime
-import random
-import sqlite3
+import numpy as np
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import requests
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
-import yfinance as yf
 
 # Page Configuration
 st.set_page_config(
-    page_title="Global Treasury Command Center",
-    page_icon="🏦",
+    page_title="AlphaQuant: Institutional Market Intelligence & Analytics",
+    page_icon="⚡",
     layout="wide",
 )
 
-# Auto-refresh live data feed every 60 seconds
-count = st_autorefresh(interval=60000, limit=None, key="command_center_feed")
-
 # ==========================================
-# CUSTOM STYLING (BLACK & NEON GREEN THEME)
+# CUSTOM STYLING (BLACK & NEON BLUE THEME)
 # ==========================================
 st.markdown(
     """
@@ -31,11 +28,11 @@ st.markdown(
         border: 1px solid #374151;
         padding: 12px 16px;
         border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0, 255, 102, 0.05);
+        box-shadow: 0 4px 15px rgba(0, 240, 255, 0.05);
     }
     div[data-testid="stMetric"]:hover {
-        border-color: #00ff66;
-        box-shadow: 0 0 15px rgba(0, 255, 102, 0.25);
+        border-color: #00f0ff;
+        box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
     }
     div[data-testid="stMetric"] label {
         color: #9ca3af !important;
@@ -45,7 +42,7 @@ st.markdown(
         letter-spacing: 0.5px;
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-        color: #00ff66 !important;
+        color: #00f0ff !important;
         font-weight: 700;
         font-size: 1.25rem;
     }
@@ -53,7 +50,7 @@ st.markdown(
         color: #ffffff;
         font-family: 'Inter', sans-serif;
     }
-    .command-header {
+    .terminal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -63,6 +60,14 @@ st.markdown(
         border: 1px solid #374151;
         margin-bottom: 20px;
     }
+    .analytics-card {
+        background: #111827;
+        border: 1px solid #374151;
+        padding: 25px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        line-height: 1.7;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -70,296 +75,482 @@ st.markdown(
 
 
 # ==========================================
-# SQL DATABASE INITIALIZATION & MIGRATION
+# SIDEBAR CONTROLS & UNIFIED DROPDOWN ROUTING
 # ==========================================
-def init_db():
-  conn = sqlite3.connect("command_center.db")
-  cursor = conn.cursor()
-  
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS sql_transactions (
-            transaction_id TEXT PRIMARY KEY,
-            timestamp TEXT,
-            entity_region TEXT,
-            description TEXT,
-            debit REAL,
-            credit REAL,
-            status TEXT
-        )
-    """)
-  
-  try:
-    cursor.execute("ALTER TABLE sql_transactions ADD COLUMN entity_region TEXT DEFAULT 'North America'")
-  except Exception:
-    pass
-
-  try:
-    cursor.execute("ALTER TABLE sql_transactions ADD COLUMN status TEXT DEFAULT 'CONFIRMED'")
-  except Exception:
-    pass
-
-  cursor.execute("SELECT COUNT(*) FROM sql_transactions")
-  if cursor.fetchone()[0] == 0:
-    sample_txs = [
-        ("TXN-NorthAmerica-1", "2026-11-02 21:03:07", "North America", "CLIENT SETTLEMENT - NY", 0.0, 120500.0, "CONFIRMED"),
-        ("TXN-Europe-2", "2026-11-02 21:03:00", "Europe", "EUROCLEAR LIQUIDITY TRANSFER", 15200.0, 0.0, "PROCESSING"),
-        ("TXN-Asia-3", "2026-11-02 21:03:00", "Asia", "TOKYO HUB VENDOR PAYOUT", 45000.0, 0.0, "CONFIRMED"),
-        ("TXN-MENA-4", "2026-11-02 21:00:15", "MENA", "DUBAI TREASURY REVENUE SWIFT", 0.0, 450000.0, "CONFIRMED"),
-        ("TXN-Oceania-5", "2026-11-02 20:55:40", "Oceania", "SYDNEY ASSET SETTLEMENT", 82300.0, 0.0, "PROCESSING"),
-        ("TXN-SouthAmerica-6", "2026-11-02 20:50:10", "South America", "SÃO PAULO OPERATING EXPENSE", 18900.0, 0.0, "CONFIRMED"),
-    ]
-    cursor.executemany("INSERT OR IGNORE INTO sql_transactions VALUES (?, ?, ?, ?, ?, ?, ?)", sample_txs)
-  conn.commit()
-  conn.close()
-
-
-init_db()
-
-
-# ==========================================
-# SIDEBAR NAVIGATION & 6-REGION FILTERS
-# ==========================================
-st.sidebar.markdown("### 🏦 Aegis Command")
+st.sidebar.markdown("### ⚡ AlphaQuant Terminal")
 st.sidebar.markdown("---")
+
 nav_choice = st.sidebar.radio(
     "Navigation",
     [
-        "📊 Executive Command Center",
-        "📋 SQL Transaction Ledger",
-        "⚡ Live API Analytics",
-        "🤖 Aegis AI Assistant",
-        "⚙️ Treasury Settings",
+        "📈 Price Action & Technicals",
+        "📊 Quantitative Risk & Volatility",
+        "🔗 Multi-Asset Performance & Spread",
+        "📖 Analytics Guide & Overview",
     ],
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🌐 Global Territory Filters")
-selected_region = st.sidebar.selectbox(
-    "Filter Region", 
-    ["All Global Regions", "North America", "Europe", "Asia", "MENA", "Oceania", "South America"]
+st.sidebar.subheader("🎯 Market Screener Input")
+
+# Comprehensive curated asset pool encompassing mega-cap tech, indices, crypto, and growth equities
+comprehensive_tickers = [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "NVDA",
+    "META",
+    "TSLA",
+    "AMD",
+    "NFLX",
+    "INTC",
+    "SPY",
+    "QQQ",
+    "BTC-USD",
+    "ETH-USD",
+]
+
+# Fully dropdown-driven asset selection to ensure absolute data consistency and prevent analysis errors
+active_ticker = st.sidebar.selectbox(
+    "Select Focus Asset", comprehensive_tickers, index=0
 )
-currency_mode = st.sidebar.selectbox("Currency Display", ["USD ($)", "EUR (€)", "GBP (£)", "AED (د.إ)", "JPY (¥)"])
-selected_status = st.sidebar.selectbox("Transaction Status", ["All Statuses", "CONFIRMED", "PROCESSING"])
+
+timeframe = st.sidebar.selectbox(
+    "Historical Timeframe (Analysis Window)",
+    ["1mo", "3mo", "6mo", "1y", "2y"],
+    index=2,
+)
 
 st.sidebar.markdown("---")
-st.sidebar.success("🟢 Secure Stream Active")
-
-# FX Conversion Multipliers
-fx_rates = {"USD ($)": 1.0, "EUR (€)": 0.92, "GBP (£)": 0.79, "AED (د.إ)": 3.67, "JPY (¥)": 152.0}
-fx_symbol = {"USD ($)": "$", "EUR (€)": "€", "GBP (£)": "£", "AED (د.إ)": "AED ", "JPY (¥)": "¥"}
-mult = fx_rates[currency_mode]
-sym = fx_symbol[currency_mode]
+st.sidebar.success(f"🟢 Active Asset: **{active_ticker}**")
 
 
 # ==========================================
-# FILTERED DATABASE QUERY LOADER
+# DATA INGESTION ENGINE
 # ==========================================
-def load_filtered_data(region, status):
-  conn = sqlite3.connect("command_center.db")
-  query = "SELECT * FROM sql_transactions WHERE 1=1"
-  params = []
-
-  if region != "All Global Regions":
-    query += " AND entity_region = ?"
-    params.append(region)
-  
-  if status != "All Statuses":
-    query += " AND status = ?"
-    params.append(status)
-
-  query += " ORDER BY timestamp DESC"
-
+@st.cache_data(ttl=900, show_spinner=False)
+def fetch_live_stock_data(ticker_symbol, period_str="1y"):
+  ticker_symbol = ticker_symbol.strip().upper()
+  url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker_symbol}?interval=1d&range={period_str}"
+  headers = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  }
   try:
-    df = pd.read_sql_query(query, conn, params=params)
-  except Exception:
-    df = pd.DataFrame(columns=["transaction_id", "timestamp", "entity_region", "description", "debit", "credit", "status"])
-  conn.close()
-  return df
+    response = requests.get(url, headers=headers, timeout=8)
+    if response.status_code != 200:
+      return pd.DataFrame()
 
+    data = response.json()
+    result = data["chart"]["result"][0]
+    timestamps = result["timestamp"]
+    quote = result["indicators"]["quote"][0]
 
-# Fetch filtered dataframe based on sidebar selections
-df = load_filtered_data(selected_region, selected_status)
+    df = pd.DataFrame(
+        {
+            "Open": quote.get("open", []),
+            "High": quote.get("high", []),
+            "Low": quote.get("low", []),
+            "Close": quote.get("close", []),
+            "Volume": quote.get("volume", []),
+        },
+        index=pd.to_datetime(timestamps, unit="s"),
+    )
 
-
-# ==========================================
-# LIVE API MARKET FEED (REAL DATA)
-# ==========================================
-@st.cache_data(ttl=300)
-def fetch_market_data():
-  try:
-    data = yf.download(["^GSPC", "^IXIC", "^TNX"], period="1mo", progress=False)["Close"]
-    if isinstance(data.columns, pd.MultiIndex):
-      data.columns = data.columns.droplevel(0)
-    return data
+    df = df.dropna(subset=["Close"])
+    return df
   except Exception:
     return pd.DataFrame()
 
 
-market_df = fetch_market_data()
+@st.cache_data(ttl=900, show_spinner=False)
+def fetch_multi_asset_data(tuple_tickers, period_str="1y"):
+  closes = {}
+  for t in tuple_tickers:
+    df = fetch_live_stock_data(t, period_str)
+    if not df.empty and "Close" in df.columns:
+      closes[t] = df["Close"].dropna()
+
+  if closes:
+    multi_df = pd.DataFrame(closes).dropna()
+    if not multi_df.empty:
+      return multi_df
+  return pd.DataFrame()
 
 
 # ==========================================
-# ROUTING VIEWS
+# VIEW ROUTING
 # ==========================================
 
-if nav_choice == "📊 Executive Command Center":
-  st.markdown(f"""
-        <div class="command-header">
-            <h2 style="margin:0; color:#ffffff; font-size: 1.5rem;">🌐 GLOBAL TREASURY COMMAND CENTER</h2>
-            <div style="font-size: 0.85rem; color: #00ff66; font-weight: 600;">
-                TERRITORY: {selected_region} &nbsp;|&nbsp; STATUS: {selected_status} &nbsp;|&nbsp; CURRENCY: {currency_mode}
+if nav_choice == "📈 Price Action & Technicals":
+  st.markdown(
+      f"""
+        <div class="terminal-header">
+            <h2 style="margin:0; color:#ffffff; font-size: 1.5rem;">📈 MARKET INTELLIGENCE: {active_ticker}</h2>
+            <div style="font-size: 0.85rem; color: #00f0ff; font-weight: 600;">
+                WINDOW: {timeframe.upper()} &nbsp;|&nbsp; THEME: NEON BLUE
             </div>
         </div>
-    """, unsafe_allow_html=True)
+    """,
+      unsafe_allow_html=True,
+  )
 
-  # 6 KPI Metric Cards (Scaled dynamically if filtered)
-  filter_multiplier_kpi = len(df) / 6 if len(df) > 0 else 0.2
-  if selected_region != "All Global Regions":
-    display_cash = 78.2 * mult * max(filter_multiplier_kpi, 0.3)
-    display_flow = 25 * mult * max(filter_multiplier_kpi, 0.3)
+  with st.spinner(f"Streaming data for {active_ticker}..."):
+    stock_df = fetch_live_stock_data(active_ticker, timeframe)
+
+  if not stock_df.empty and "Close" in stock_df.columns:
+    latest_close = float(stock_df["Close"].iloc[-1])
+    prev_close = (
+        float(stock_df["Close"].iloc[-2])
+        if len(stock_df) > 1
+        else latest_close
+    )
+    daily_change_pct = ((latest_close - prev_close) / prev_close) * 100
+    high_period = float(stock_df["High"].max())
+    low_period = float(stock_df["Low"].min())
+    total_volume = int(stock_df["Volume"].iloc[-1])
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric(
+        "Live Close Price",
+        f"${latest_close:,.2f}",
+        f"{daily_change_pct:+.2f}% 24h",
+    )
+    c2.metric("Period High", f"${high_period:,.2f}", "Peak Valuation")
+    c3.metric("Period Low", f"${low_period:,.2f}", "Trough Valuation")
+    c4.metric("Latest Volume", f"{total_volume:,}", "Shares Traded")
+
+    st.markdown("---")
+
+    # Technical Indicators Calculation
+    stock_df["SMA_20"] = stock_df["Close"].rolling(window=20).mean()
+    stock_df["SMA_50"] = stock_df["Close"].rolling(window=50).mean()
+    stock_df["BB_Std"] = stock_df["Close"].rolling(window=20).std()
+    stock_df["BB_Upper"] = stock_df["SMA_20"] + (stock_df["BB_Std"] * 2)
+    stock_df["BB_Lower"] = stock_df["SMA_20"] - (stock_df["BB_Std"] * 2)
+
+    st.subheader(
+        f"Price Action, Moving Averages & Bollinger Bands ({active_ticker})"
+    )
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=stock_df.index,
+            y=stock_df["Close"],
+            mode="lines",
+            name="Close Price",
+            line=dict(color="#00f0ff", width=2),
+            hovertemplate=(
+                "<b>Date</b>: %{x|%b %d, %Y}<br><b>Price</b>:"
+                " $%{y:,.2f}<extra></extra>"
+            ),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=stock_df.index,
+            y=stock_df["SMA_20"],
+            mode="lines",
+            name="SMA 20",
+            line=dict(color="#f39c12", width=1.5, dash="dash"),
+            hovertemplate="<b>SMA 20</b>: $%{y:,.2f}<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=stock_df.index,
+            y=stock_df["SMA_50"],
+            mode="lines",
+            name="SMA 50",
+            line=dict(color="#e74c3c", width=1.5, dash="dash"),
+            hovertemplate="<b>SMA 50</b>: $%{y:,.2f}<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=stock_df.index,
+            y=stock_df["BB_Upper"],
+            mode="lines",
+            name="BB Upper",
+            line=dict(color="rgba(0, 240, 255, 0.3)", width=1),
+            hoverinfo="skip",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=stock_df.index,
+            y=stock_df["BB_Lower"],
+            mode="lines",
+            name="BB Lower",
+            line=dict(color="rgba(0, 240, 255, 0.3)", width=1),
+            fill="tonexty",
+            fillcolor="rgba(0, 240, 255, 0.05)",
+            hoverinfo="skip",
+        )
+    )
+
+    fig.update_layout(
+        paper_bgcolor="#0b0f19",
+        plot_bgcolor="#111827",
+        font=dict(color="#f3f4f6"),
+        height=450,
+        margin=dict(l=20, r=20, t=30, b=20),
+        legend=dict(
+            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+        ),
+        xaxis=dict(showgrid=True, gridcolor="#1f2937", title=""),
+        yaxis=dict(showgrid=True, gridcolor="#1f2937", title="Price (USD)"),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("---")
+    st.subheader("Daily Trading Volume Breakdown")
+
+    vol_tail = stock_df.tail(60).copy()
+
+    def format_volume(val):
+      if val >= 1e9:
+        return f"{val / 1e9:.2f}B"
+      elif val >= 1e6:
+        return f"{val / 1e6:.2f}M"
+      elif val >= 1e3:
+        return f"{val / 1e3:.2f}K"
+      else:
+        return f"{val:.2f}"
+
+    vol_tail["Formatted_Volume"] = vol_tail["Volume"].apply(format_volume)
+    vol_tail["Volume_Val"] = vol_tail["Volume"]
+
+    fig_vol = px.bar(
+        vol_tail,
+        x=vol_tail.index,
+        y="Volume_Val",
+        custom_data=["Formatted_Volume"],
+    )
+    fig_vol.update_layout(
+        paper_bgcolor="#0b0f19",
+        plot_bgcolor="#111827",
+        font=dict(color="#f3f4f6"),
+        height=280,
+        margin=dict(l=20, r=20, t=30, b=20),
+        xaxis=dict(showgrid=False, title=""),
+        yaxis=dict(showgrid=True, gridcolor="#1f2937", title="Volume"),
+    )
+    fig_vol.update_traces(
+        marker_color="#00f0ff",
+        hovertemplate=(
+            "<b>Date</b>: %{x|%b %d, %Y}<br><b>Volume</b>:"
+            " %{customdata[0]}<extra></extra>"
+        ),
+    )
+    st.plotly_chart(fig_vol, use_container_width=True)
+
   else:
-    display_cash = 78.2 * mult
-    display_flow = 25 * mult
+    st.error(
+        f"⚠️ Unable to retrieve data for '{active_ticker}'. Please verify the"
+        " symbol format."
+    )
 
-  c1, c2, c3, c4, c5, c6 = st.columns(6)
-  c1.metric("Cash on Hand", f"{sym}{display_cash:.1f}M", "+2.1%")
-  c2.metric("Forex Exposure", f"{sym}{1.4 * mult:.1f}B", "-0.5%")
-  c3.metric("Net Interest Margin", "3.8%", "+0.15%")
-  c4.metric("Operating Cash Flow", f"{sym}{display_flow:.0f}M", "+4.3%")
-  c5.metric("Debt Service Ratio", "1.7X", "-0.2%")
-  c6.metric("Investment Portfolio", f"{sym}{421 * mult:.0f}M", "+1.8%")
+elif nav_choice == "📊 Quantitative Risk & Volatility":
+  st.subheader(
+      f"📊 Quantitative Risk & Volatility Analytics ({active_ticker})"
+  )
 
-  st.markdown("---")
+  with st.spinner(f"Computing risk metrics for {active_ticker}..."):
+    stock_df = fetch_live_stock_data(active_ticker, timeframe)
 
-  # Middle Charts Section
-  col_m1, col_m2, col_m3 = st.columns([1.2, 1.2, 1])
+  if not stock_df.empty and "Close" in stock_df.columns:
+    stock_df["Daily_Return"] = stock_df["Close"].pct_change()
+    stock_df["Rolling_Vol_30"] = (
+        stock_df["Daily_Return"].rolling(window=30).std() * np.sqrt(252) * 100
+    )
 
-  with col_m1:
-    st.subheader(f"Global Cash Balance ({selected_region})")
-    if not market_df.empty and "^GSPC" in market_df.columns:
-      st.line_chart(market_df["^GSPC"].tail(30), height=220)
-    else:
-      st.line_chart(pd.DataFrame({"Cash": [45, 52, 48, 60, 58, 65, 78]}, index=range(7)), height=220)
+    annualized_vol = stock_df["Daily_Return"].std() * np.sqrt(252) * 100
+    cumulative_return = (
+        (stock_df["Close"].iloc[-1] - stock_df["Close"].iloc[0])
+        / stock_df["Close"].iloc[0]
+    ) * 100
 
-  with col_m2:
-    st.subheader("Cash Flow Forecast (90D)")
-    forecast_data = pd.DataFrame({
-        "Cash Flow": [100*mult, 120*mult, 110*mult, 140*mult, 160*mult, 150*mult, 180*mult, 210*mult, 190*mult, 240*mult],
-        "Forecast": [105*mult, 125*mult, 115*mult, 145*mult, 165*mult, 155*mult, 185*mult, 215*mult, 195*mult, 250*mult]
-    })
-    st.area_chart(forecast_data, height=220)
+    q1, q2, q3 = st.columns(3)
+    q1.metric(
+        "Annualized Volatility (Risk)",
+        f"{annualized_vol:.2f}%",
+        "Annualized Standard Deviation",
+    )
+    q2.metric(
+        "Cumulative Period Return",
+        f"{cumulative_return:+.2f}%",
+        f"Over {timeframe}",
+    )
+    q3.metric(
+        "Daily Mean Return",
+        f"{stock_df['Daily_Return'].mean()*100:+.3f}%",
+        "Average Daily Shift",
+    )
 
-  with col_m3:
-    st.subheader("Liquidity Breakdown")
-    liquidity_df = pd.DataFrame({
-        "Asset": ["Cash", "Short-Term", "Marketable"],
-        "Share (%)": [55, 30, 15]
-    }).set_index("Asset")
-    st.bar_chart(liquidity_df, height=220)
+    st.markdown("---")
+    st.subheader("30-Day Rolling Annualized Volatility Trend (%)")
 
-  st.markdown("---")
+    vol_clean_df = stock_df.dropna(subset=["Rolling_Vol_30"]).copy()
 
-  # Bottom Section
-  b1, b2 = st.columns([2, 1])
-  with b1:
-    st.subheader(f"📋 Filtered SQL Transaction Ledger ({len(df)} Records Found)")
-    display_df = df.copy()
-    display_df["debit"] = display_df["debit"] * mult
-    display_df["credit"] = display_df["credit"] * mult
-    st.dataframe(display_df, use_container_width=True, hide_index=True)
+    fig_vol_trend = go.Figure()
+    fig_vol_trend.add_trace(
+        go.Scatter(
+            x=vol_clean_df.index,
+            y=vol_clean_df["Rolling_Vol_30"],
+            mode="lines",
+            name="30D Volatility",
+            line=dict(color="#00f0ff", width=2),
+            hovertemplate=(
+                "<b>Date</b>: %{x|%b %d, %Y}<br><b>Volatility</b>:"
+                " %{y:.2f}%<extra></extra>"
+            ),
+        )
+    )
+    fig_vol_trend.update_layout(
+        paper_bgcolor="#0b0f19",
+        plot_bgcolor="#111827",
+        font=dict(color="#f3f4f6"),
+        height=320,
+        margin=dict(l=20, r=20, t=30, b=20),
+        xaxis=dict(showgrid=True, gridcolor="#1f2937", title=""),
+        yaxis=dict(showgrid=True, gridcolor="#1f2937", title="Volatility (%)"),
+        showlegend=False,
+    )
+    st.plotly_chart(fig_vol_trend, use_container_width=True)
 
-  with b2:
-    st.subheader("📊 Revenue by Global Region")
-    region_data = pd.DataFrame({
-        "Region": ["North America", "Europe", "Asia", "MENA", "Oceania", "South America"],
-        "Revenue ($M)": [580*mult, 460*mult, 410*mult, 340*mult, 290*mult, 210*mult]
-    }).set_index("Region")
-    st.bar_chart(region_data, height=240)
+    st.markdown("---")
+    st.subheader("Daily Return Distribution Frequency")
 
-elif nav_choice == "📋 SQL Transaction Ledger":
-  st.subheader("📋 Relational SQL Transaction Database Manager")
-  st.markdown(f"Currently displaying records matching region: **{selected_region}** and status: **{selected_status}**.")
+    returns_clean = (stock_df["Daily_Return"].dropna() * 100).reset_index()
+    returns_clean.columns = ["Date", "Return"]
 
-  with st.form("new_trade_form"):
-    st.markdown("### ⚡ Execute & Commit New Treasury Transaction")
-    col_f1, col_f2 = st.columns(2)
-    with col_f1:
-      t_id = f"TXN-{random.randint(8000, 9999)}"
-      t_reg = st.selectbox(
-          "Entity Region", 
-          ["North America", "Europe", "Asia", "MENA", "Oceania", "South America"]
-      )
-      t_desc = st.text_input("Description", "GLOBAL SETTLEMENT WIRE")
-    with col_f2:
-      t_type = st.selectbox("Transaction Type", ["Credit (Incoming)", "Debit (Outgoing)"])
-      t_amt = st.number_input("Amount ($ USD)", min_value=100.0, value=50000.0)
-
-    submitted = st.form_submit_button("Commit Transaction to SQL DB")
-    if submitted:
-      debit_val = t_amt if t_type == "Debit (Outgoing)" else 0.0
-      credit_val = t_amt if t_type == "Credit (Incoming)" else 0.0
-      now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-      
-      conn = sqlite3.connect("command_center.db")
-      cur = conn.cursor()
-      cur.execute("INSERT INTO sql_transactions VALUES (?, ?, ?, ?, ?, ?, ?)", 
-                  (t_id, now_str, t_reg, t_desc, debit_val, credit_val, "CONFIRMED"))
-      conn.commit()
-      conn.close()
-      st.success(f"Successfully committed transaction {t_id} for {t_reg}!")
-      st.rerun()
-
-  st.markdown("---")
-  st.subheader("Filtered Database Records")
-  st.dataframe(df, use_container_width=True, hide_index=True)
-
-elif nav_choice == "⚡ Live API Analytics":
-  st.subheader("⚡ Real-Time Market Feed Analytics")
-  st.markdown("Streaming real-time benchmark yields and stock indices directly from Yahoo Finance API.")
-  if not market_df.empty:
-    st.line_chart(market_df)
-    st.dataframe(market_df.tail(15), use_container_width=True)
+    fig_hist = px.histogram(
+        returns_clean,
+        x="Return",
+        nbins=50,
+    )
+    fig_hist.update_layout(
+        paper_bgcolor="#0b0f19",
+        plot_bgcolor="#111827",
+        font=dict(color="#f3f4f6"),
+        height=300,
+        margin=dict(l=20, r=20, t=30, b=20),
+        showlegend=False,
+        xaxis=dict(showgrid=True, gridcolor="#1f2937", title="Daily Return (%)"),
+        yaxis=dict(
+            showgrid=True, gridcolor="#1f2937", title="Frequency (Trading Days)"
+        ),
+    )
+    fig_hist.update_traces(
+        marker_color="#00f0ff",
+        hovertemplate=(
+            "<b>Return Range</b>: %{x}<br><b>Trading Days (Count)</b>:"
+            " %{y}<extra></extra>"
+        ),
+    )
+    st.plotly_chart(fig_hist, use_container_width=True)
   else:
-    st.warning("Connecting to live API stream...")
+    st.warning(f"⚠️ No quantitative data available for '{active_ticker}'.")
 
-elif nav_choice == "🤖 Aegis AI Assistant":
-  st.subheader("🤖 Aegis AI Treasury Assistant")
-  st.markdown(f"Asking context-aware queries based on current view (**Region:** {selected_region}, **Status:** {selected_status}).")
+elif nav_choice == "🔗 Multi-Asset Performance & Spread":
+  st.subheader("🔗 Multi-Asset Comparative Performance & Spread")
+  st.markdown(
+      "Comparing normalized cumulative percentage growth across key market"
+      " leaders (Baseline = 100):"
+  )
 
-  if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Hello! I am your Aegis AI Treasury Assistant. How can I assist you with your multi-region cash flow or global portfolio analytics today?"}
-    ]
+  with st.spinner("Fetching multi-asset sector stream..."):
+    multi_tickers = ("AAPL", "MSFT", "NVDA", "TSLA", "SPY", "QQQ")
+    multi_df = fetch_multi_asset_data(multi_tickers, timeframe)
 
-  for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-      st.markdown(message["content"])
+  if not multi_df.empty:
+    norm_df = (multi_df / multi_df.iloc[0]) * 100
 
-  if prompt := st.chat_input("Ask about cash balance, regional exposure, or SQL transactions..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-      st.markdown(prompt)
+    fig_multi = px.line(norm_df)
+    fig_multi.update_layout(
+        paper_bgcolor="#0b0f19",
+        plot_bgcolor="#111827",
+        font=dict(color="#f3f4f6"),
+        height=480,
+        margin=dict(l=20, r=20, t=30, b=20),
+        xaxis=dict(showgrid=True, gridcolor="#1f2937", title=""),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="#1f2937",
+            title="Normalized Growth (Base = 100)",
+        ),
+        legend=dict(
+            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+        ),
+    )
+    fig_multi.update_traces(
+        hovertemplate=(
+            "<b>Date</b>: %{x|%b %d, %Y}<br><b>Index Value</b>:"
+            " %{y:,.2f}<extra></extra>"
+        )
+    )
+    st.plotly_chart(fig_multi, use_container_width=True)
+  else:
+    st.warning("Multi-asset comparison stream currently unavailable.")
 
-    prompt_lower = prompt.lower()
-    if "cash" in prompt_lower or "balance" in prompt_lower:
-      response = f"For **{selected_region}**, your liquidity position reflects current operating cash flow parameters scaled against active ledger entries."
-    elif "transaction" in prompt_lower or "ledger" in prompt_lower:
-      response = f"There are currently **{len(df)} transaction records** matching your active filter criteria (**Region:** {selected_region}, **Status:** {selected_status})."
-    elif "region" in prompt_lower or "mena" in prompt_lower or "asia" in prompt_lower:
-      response = "All six territories (North America, Europe, Asia, MENA, Oceania, and South America) are actively tracked in the relational database backend."
-    else:
-      response = f"Analyzing your query regarding *'{prompt}'* for **{selected_region}**: All portfolio parameters and market indicators are within operating thresholds."
+elif nav_choice == "📖 Analytics Guide & Overview":
+  st.subheader("📖 AlphaQuant Product & Analytics Reference Guide")
+  st.markdown(
+      "A comprehensive executive walkthrough explaining how every metric,"
+      " chart, and feature within AlphaQuant generates business value and"
+      " analytical insight."
+  )
 
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    with st.chat_message("assistant"):
-      st.markdown(response)
+  st.markdown("### 🏢 Product Utility and Business Value")
+  st.markdown(
+      """
+    <div class="analytics-card">
+        In modern financial markets and corporate strategy, raw data tables are overwhelmingly dense, while static spreadsheet reports lack real-time interactivity. AlphaQuant addresses this challenge by functioning as an on-demand, institutional-grade Business Intelligence terminal. 
+        <br><br>
+        It empowers analysts, stakeholders, and strategic decision-makers to instantly evaluate asset performance, quantify risk exposure, and benchmark market leaders without requiring complex infrastructure or expensive proprietary desk software.
+    </div>
+  """,
+      unsafe_allow_html=True,
+  )
 
-elif nav_choice == "⚙️ Treasury Settings":
-  st.subheader("⚙️ System Architecture & Documentation")
-  st.markdown("""
-  ### Portfolio Project Specifications:
-  * **Interactive Filters:** Global region selection, status filtering, and multi-currency conversion (`USD`, `EUR`, `GBP`, `AED`, `JPY`) dynamically query the SQLite backend.
-  * **Global Coverage:** Multi-region support across **North America, Europe, Asia, MENA, Oceania, and South America**.
-  * **Theme:** Black & Neon Green institutional dark mode (`#0b0f19` and `#00ff66`).
-  * **Backend:** Relational SQLite database (`command_center.db`) supporting live transaction logging and filtering.
-  """)
+  st.markdown("### 📈 Price Action and Technical Analysis")
+  st.markdown(
+      """
+    <div class="analytics-card">
+        The top metric cards provide an immediate snapshot of market conditions, showing the latest closing price, period highs and lows, and overall trading liquidity at a glance. This allows stakeholders to gauge 24-hour momentum before diving deeper into historical trends.
+        <br><br>
+        The main price chart incorporates Simple Moving Averages over 20-day and 50-day windows. By smoothing out daily market noise, these trendlines help analysts spot short-term versus medium-term momentum shifts and potential trend reversals. Framing the price action, the Bollinger Band channel establishes dynamic market boundaries. When the bands contract tightly together, they signal an impending market breakout. When prices touch or exceed the outer boundaries, analysts can quickly identify overextended or overbought and oversold conditions.
+        <br><br>
+        Because market volume historically precedes price action, the volume bar chart displays daily trading activity. Volume spikes—intelligently formatted in Billions, Millions, or Thousands on hover—confirm the validity behind major price breakouts or sudden institutional sell-offs.
+    </div>
+  """,
+      unsafe_allow_html=True,
+  )
+
+  st.markdown("### 📊 Quantitative Risk and Volatility Intelligence")
+  st.markdown(
+      """
+    <div class="analytics-card">
+        Evaluating asset performance without accounting for risk is incomplete. The summary risk metrics translate raw price fluctuations into standardized financial figures, presenting annualized standard deviation to inform portfolio managers of the risk profile associated with holding an asset over time.
+        <br><br>
+        Because market uncertainty is never constant, the 30-day rolling annualized volatility trend chart tracks how risk shifts dynamically. This visualization highlights specific volatility spikes or periods of relative calm corresponding to macroeconomic news cycles, earnings announcements, or geopolitical shifts.
+        <br><br>
+        To understand structural market behavior, the daily return distribution histogram maps out the exact shape of historical gains and losses. Analysts rely on this distribution to evaluate skewness and tail risk, observing the precise frequency of extreme daily positive or negative swings.
+    </div>
+  """,
+      unsafe_allow_html=True,
+  )
+
+  st.markdown("### 🔗 Multi-Asset Comparative Performance")
+  st.markdown(
+      """
+    <div class="analytics-card">
+        Comparing a lower-priced equity directly against a high-value technology stock or cryptocurrency breaks standard visual scaling due to nominal price discrepancies. 
+        <br><br>
+        The Multi-Asset Performance module solves this by rescaling every selected asset to start at a standardized baseline index of 100 on day one. This normalization technique enables analysts and portfolio strategists to instantly evaluate relative strength, growth divergence, and sector correlation across market leaders and major benchmarks side-by-side.
+    </div>
+  """,
+      unsafe_allow_html=True,
+  )

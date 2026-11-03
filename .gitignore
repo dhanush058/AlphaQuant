@@ -8,10 +8,5 @@ venv/
 env/
 ENV/
 
-# Local SQLite databases (keeps production clean)
-*.db
-*.sqlite
-*.sqlite3
-
 # Streamlit local configuration
 .streamlit/secrets.toml
