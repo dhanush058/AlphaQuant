@@ -414,22 +414,27 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
             (stock_df["Close"].iloc[-1] - stock_df["Close"].iloc[0])
             / stock_df["Close"].iloc[0]
         ) * 100
+        mean_return_val = stock_df["Daily_Return"].mean() * 100
 
         q1, q2, q3 = st.columns(3)
+        # Card 1: Volatility (No misleading directional delta/arrow)
         q1.metric(
             "Annualized Volatility (Risk)",
             f"{annualized_vol:.2f}%",
-            "Annualized Standard Deviation",
+            None,
+            help="Annualized Standard Deviation",
         )
+        # Card 2: Cumulative Return (Dynamically colored red/green based on sign)
         q2.metric(
             "Cumulative Period Return",
             f"{cumulative_return:+.2f}%",
-            f"Over {timeframe}",
+            f"{cumulative_return:+.2f}% ({timeframe})",
         )
+        # Card 3: Daily Mean Return (Dynamically colored red/green based on sign)
         q3.metric(
             "Daily Mean Return",
-            f"{stock_df['Daily_Return'].mean()*100:+.3f}%",
-            "Average Daily Shift",
+            f"{mean_return_val:+.3f}%",
+            f"{mean_return_val:+.3f}% vs baseline",
         )
 
         st.markdown("---")
@@ -598,4 +603,4 @@ elif nav_choice == "📖 Analytics Guide & Overview":
     </div>
   """,
         unsafe_allow_html=True,
-    )
+            )
