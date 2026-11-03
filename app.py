@@ -249,19 +249,17 @@ if nav_choice == "📈 Price Action & Technicals":
         low_period = float(stock_df["Low"].min())
         total_volume = int(stock_df["Volume"].iloc[-1])
 
-        # Dynamically compute prior period benchmarks for accurate directional deltas
-        prev_high_period = (
-            float(stock_df["High"].iloc[:-1].max())
-            if len(stock_df) > 1
-            else high_period
-        )
-        prev_low_period = (
-            float(stock_df["Low"].iloc[:-1].min())
-            if len(stock_df) > 1
-            else low_period
-        )
-        delta_high = high_period - prev_high_period
-        delta_low = low_period - prev_low_period
+        # Day-over-day range shift deltas for active directional arrows
+        if len(stock_df) > 1:
+            delta_high = float(stock_df["High"].iloc[-1]) - float(
+                stock_df["High"].iloc[-2]
+            )
+            delta_low = float(stock_df["Low"].iloc[-1]) - float(
+                stock_df["Low"].iloc[-2]
+            )
+        else:
+            delta_high = 0.0
+            delta_low = 0.0
 
         c1, c2, c3, c4 = st.columns(4)
         c1.metric(
@@ -270,10 +268,10 @@ if nav_choice == "📈 Price Action & Technicals":
             f"{daily_change_pct:+.2f}% 24h",
         )
         c2.metric(
-            "Period High", f"${high_period:,.2f}", f"{delta_high:+,.2f} vs Prior"
+            "Period High", f"${high_period:,.2f}", f"{delta_high:+,.2f} vs Yest"
         )
         c3.metric(
-            "Period Low", f"${low_period:,.2f}", f"{delta_low:+,.2f} vs Prior"
+            "Period Low", f"${low_period:,.2f}", f"{delta_low:+,.2f} vs Yest"
         )
         c4.metric("Latest Volume", f"{total_volume:,}", "Shares Traded")
 
