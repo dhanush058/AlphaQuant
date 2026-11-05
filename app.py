@@ -14,55 +14,55 @@ st.set_page_config(
 )
 
 # ==========================================
-# CUSTOM STYLING (BLACK & NEON BLUE THEME)
+# CUSTOM STYLING (CRYSTAL BLUE THEME)
 # ==========================================
 st.markdown(
     """
     <style>
     .stApp {
-        background-color: #0b0f19;
-        color: #f3f4f6;
+        background-color: #0f172a;
+        color: #f8fafc;
     }
     div[data-testid="stMetric"] {
-        background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-        border: 1px solid #374151;
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        border: 1px solid #38bdf8;
         padding: 12px 16px;
         border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0, 240, 255, 0.05);
+        box-shadow: 0 4px 15px rgba(56, 189, 248, 0.1);
     }
     div[data-testid="stMetric"]:hover {
-        border-color: #00f0ff;
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+        border-color: #0ea5e9;
+        box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
     }
     div[data-testid="stMetric"] label {
-        color: #9ca3af !important;
+        color: #7dd3fc !important;
         font-weight: 600;
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-        color: #00f0ff !important;
+        color: #38bdf8 !important;
         font-weight: 700;
         font-size: 1.25rem;
     }
     h1, h2, h3 {
-        color: #ffffff;
+        color: #f8fafc;
         font-family: 'Inter', sans-serif;
     }
     .terminal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #111827;
+        background: #1e293b;
         padding: 15px 25px;
         border-radius: 10px;
-        border: 1px solid #374151;
+        border: 1px solid #38bdf8;
         margin-bottom: 20px;
     }
     .analytics-card {
-        background: #111827;
-        border: 1px solid #374151;
+        background: #1e293b;
+        border: 1px solid #334151;
         padding: 25px;
         border-radius: 10px;
         margin-bottom: 20px;
@@ -123,7 +123,7 @@ timeframe = st.sidebar.selectbox(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.success(f"🟢 Active Asset: **{active_ticker}**")
+st.sidebar.success(f"🔵 Active Asset: **{active_ticker}**")
 
 
 # ==========================================
@@ -231,9 +231,9 @@ if nav_choice == "📈 Price Action & Technicals":
     st.markdown(
         f"""
         <div class="terminal-header">
-            <h2 style="margin:0; color:#ffffff; font-size: 1.5rem;">📈 MARKET INTELLIGENCE: {active_ticker}</h2>
-            <div style="font-size: 0.85rem; color: #00f0ff; font-weight: 600;">
-                WINDOW: {timeframe.upper()} &nbsp;|&nbsp; THEME: NEON BLUE
+            <h2 style="margin:0; color:#f8fafc; font-size: 1.5rem;">📈 MARKET INTELLIGENCE: {active_ticker}</h2>
+            <div style="font-size: 0.85rem; color: #38bdf8; font-weight: 600;">
+                WINDOW: {timeframe.upper()} &nbsp;|&nbsp; THEME: CRYSTAL BLUE
             </div>
         </div>
     """,
@@ -292,7 +292,7 @@ if nav_choice == "📈 Price Action & Technicals":
                 y=stock_df["Close"],
                 mode="lines",
                 name="Close Price",
-                line=dict(color="#00f0ff", width=2),
+                line=dict(color="#38bdf8", width=2),
                 hovertemplate=(
                     "<b>Date</b>: %{x|%b %d, %Y}<br><b>Price</b>:"
                     " $%{y:,.2f}<extra></extra>"
@@ -305,7 +305,7 @@ if nav_choice == "📈 Price Action & Technicals":
                 y=stock_df["SMA_20"],
                 mode="lines",
                 name="SMA 20",
-                line=dict(color="#f39c12", width=1.5, dash="dash"),
+                line=dict(color="#38bdf8", width=1.5, dash="dash"),
                 hovertemplate="<b>SMA 20</b>: $%{y:,.2f}<extra></extra>",
             )
         )
@@ -315,7 +315,7 @@ if nav_choice == "📈 Price Action & Technicals":
                 y=stock_df["SMA_50"],
                 mode="lines",
                 name="SMA 50",
-                line=dict(color="#e74c3c", width=1.5, dash="dash"),
+                line=dict(color="#f43f5e", width=1.5, dash="dash"),
                 hovertemplate="<b>SMA 50</b>: $%{y:,.2f}<extra></extra>",
             )
         )
@@ -325,7 +325,7 @@ if nav_choice == "📈 Price Action & Technicals":
                 y=stock_df["BB_Upper"],
                 mode="lines",
                 name="BB Upper",
-                line=dict(color="rgba(0, 240, 255, 0.3)", width=1),
+                line=dict(color="rgba(56, 189, 248, 0.3)", width=1),
                 hoverinfo="skip",
             )
         )
@@ -335,24 +335,24 @@ if nav_choice == "📈 Price Action & Technicals":
                 y=stock_df["BB_Lower"],
                 mode="lines",
                 name="BB Lower",
-                line=dict(color="rgba(0, 240, 255, 0.3)", width=1),
+                line=dict(color="rgba(56, 189, 248, 0.3)", width=1),
                 fill="tonexty",
-                fillcolor="rgba(0, 240, 255, 0.05)",
+                fillcolor="rgba(56, 189, 248, 0.08)",
                 hoverinfo="skip",
             )
         )
 
         fig.update_layout(
-            paper_bgcolor="#0b0f19",
-            plot_bgcolor="#111827",
-            font=dict(color="#f3f4f6"),
+            paper_bgcolor="#0f172a",
+            plot_bgcolor="#1e293b",
+            font=dict(color="#f8fafc"),
             height=450,
             margin=dict(l=20, r=20, t=30, b=20),
             legend=dict(
                 orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
             ),
-            xaxis=dict(showgrid=True, gridcolor="#1f2937", title=""),
-            yaxis=dict(showgrid=True, gridcolor="#1f2937", title="Price (USD)"),
+            xaxis=dict(showgrid=True, gridcolor="#334155", title=""),
+            yaxis=dict(showgrid=True, gridcolor="#334155", title="Price (USD)"),
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -381,16 +381,16 @@ if nav_choice == "📈 Price Action & Technicals":
             custom_data=["Formatted_Volume"],
         )
         fig_vol.update_layout(
-            paper_bgcolor="#0b0f19",
-            plot_bgcolor="#111827",
-            font=dict(color="#f3f4f6"),
+            paper_bgcolor="#0f172a",
+            plot_bgcolor="#1e293b",
+            font=dict(color="#f8fafc"),
             height=280,
             margin=dict(l=20, r=20, t=30, b=20),
             xaxis=dict(showgrid=False, title=""),
-            yaxis=dict(showgrid=True, gridcolor="#1f2937", title="Volume"),
+            yaxis=dict(showgrid=True, gridcolor="#334155", title="Volume"),
         )
         fig_vol.update_traces(
-            marker_color="#00f0ff",
+            marker_color="#38bdf8",
             hovertemplate=(
                 "<b>Date</b>: %{x|%b %d, %Y}<br><b>Volume</b>:"
                 " %{customdata[0]}<extra></extra>"
@@ -449,7 +449,7 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
                 y=vol_clean_df["Rolling_Vol_30"],
                 mode="lines",
                 name="30D Volatility",
-                line=dict(color="#00f0ff", width=2),
+                line=dict(color="#38bdf8", width=2),
                 hovertemplate=(
                     "<b>Date</b>: %{x|%b %d, %Y}<br><b>Volatility</b>:"
                     " %{y:.2f}%<extra></extra>"
@@ -457,13 +457,13 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
             )
         )
         fig_vol_trend.update_layout(
-            paper_bgcolor="#0b0f19",
-            plot_bgcolor="#111827",
-            font=dict(color="#f3f4f6"),
+            paper_bgcolor="#0f172a",
+            plot_bgcolor="#1e293b",
+            font=dict(color="#f8fafc"),
             height=320,
             margin=dict(l=20, r=20, t=30, b=20),
-            xaxis=dict(showgrid=True, gridcolor="#1f2937", title=""),
-            yaxis=dict(showgrid=True, gridcolor="#1f2937", title="Volatility (%)"),
+            xaxis=dict(showgrid=True, gridcolor="#334155", title=""),
+            yaxis=dict(showgrid=True, gridcolor="#334155", title="Volatility (%)"),
             showlegend=False,
         )
         st.plotly_chart(fig_vol_trend, use_container_width=True)
@@ -480,21 +480,21 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
             nbins=50,
         )
         fig_hist.update_layout(
-            paper_bgcolor="#0b0f19",
-            plot_bgcolor="#111827",
-            font=dict(color="#f3f4f6"),
+            paper_bgcolor="#0f172a",
+            plot_bgcolor="#1e293b",
+            font=dict(color="#f8fafc"),
             height=300,
             margin=dict(l=20, r=20, t=30, b=20),
             showlegend=False,
-            xaxis=dict(showgrid=True, gridcolor="#1f2937", title="Daily Return (%)"),
+            xaxis=dict(showgrid=True, gridcolor="#334155", title="Daily Return (%)"),
             yaxis=dict(
                 showgrid=True,
-                gridcolor="#1f2937",
+                gridcolor="#334155",
                 title="Number of Trading Days",
             ),
         )
         fig_hist.update_traces(
-            marker_color="#00f0ff",
+            marker_color="#38bdf8",
             hovertemplate=(
                 "<b>Return Range</b>: %{x}<br><b>Number of Trading Days</b>:"
                 " %{y}<extra></extra>"
@@ -519,15 +519,15 @@ elif nav_choice == "🔗 Multi-Asset Performance & Spread":
 
         fig_multi = px.line(norm_df)
         fig_multi.update_layout(
-            paper_bgcolor="#0b0f19",
-            plot_bgcolor="#111827",
-            font=dict(color="#f3f4f6"),
+            paper_bgcolor="#0f172a",
+            plot_bgcolor="#1e293b",
+            font=dict(color="#f8fafc"),
             height=480,
             margin=dict(l=20, r=20, t=30, b=20),
-            xaxis=dict(showgrid=True, gridcolor="#1f2937", title=""),
+            xaxis=dict(showgrid=True, gridcolor="#334155", title=""),
             yaxis=dict(
                 showgrid=True,
-                gridcolor="#1f2937",
+                gridcolor="#334155",
                 title="Normalized Growth (Base = 100)",
             ),
             legend=dict(
@@ -545,7 +545,7 @@ elif nav_choice == "🔗 Multi-Asset Performance & Spread":
         st.warning("Multi-asset comparison stream currently unavailable.")
 
 elif nav_choice == "📖 Analytics Guide & Overview":
-    st.subheader("📖 AlphaQuant Product & Analytics Reference Guide")
+    st.subheader("📖 Analytics Guide & Overview")
     st.markdown(
         "A comprehensive executive walkthrough explaining how every metric, chart, and feature within AlphaQuant generates business value and analytical insight."
     )
