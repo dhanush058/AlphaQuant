@@ -146,7 +146,13 @@ def fetch_raw_stock_data(ticker_symbol, period_str="2y"):
             return pd.DataFrame()
 
         data = response.json()
+        if not data.get("chart", {}).get("result"):
+            return pd.DataFrame()
+            
         result = data["chart"]["result"][0]
+        if "timestamp" not in result or not result.get("indicators", {}).get("quote"):
+            return pd.DataFrame()
+            
         timestamps = result["timestamp"]
         quote = result["indicators"]["quote"][0]
 
@@ -239,11 +245,13 @@ if nav_choice == "📈 Price Action & Technicals":
 
     if not stock_df.empty and "Close" in stock_df.columns:
         latest_close = float(stock_df["Close"].iloc[-1])
-        prev_close = (
-            float(stock_df["Close"].iloc[-2])
-            if len(stock_df) > 1
-            else latest_close
-        )
+        
+        # Robust prior close fetching to guarantee true 24h accuracy
+        if len(stock_df) >= 2:
+            prev_close = float(stock_df["Close"].iloc[-2])
+        else:
+            prev_close = latest_close
+            
         daily_change_pct = ((latest_close - prev_close) / prev_close) * 100
         high_period = float(stock_df["High"].max())
         low_period = float(stock_df["Low"].min())
@@ -506,7 +514,7 @@ elif nav_choice == "🔗 Multi-Asset Performance & Spread":
         multi_tickers = ("AAPL", "MSFT", "NVDA", "TSLA", "SPY", "QQQ")
         multi_df = fetch_multi_asset_data(multi_tickers, timeframe)
 
-    if not multi_df.empty:
+    if not multi_df.empty and len(multi_df) > 0:
         norm_df = (multi_df / multi_df.iloc[0]) * 100
 
         fig_multi = px.line(norm_df)
@@ -550,7 +558,7 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         <br><br>
         It empowers analysts, stakeholders, and strategic decision-makers to instantly evaluate asset performance, quantify risk exposure, and benchmark market leaders without requiring complex infrastructure or expensive proprietary desk software.
     </div>
-  """,
+""",
         unsafe_allow_html=True,
     )
 
@@ -564,7 +572,7 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         <br><br>
         Because market volume historically precedes price action, the volume bar chart displays daily trading activity. Volume spikes—intelligently formatted in Billions, Millions, or Thousands on hover—confirm the validity behind major price breakouts or sudden institutional sell-offs.
     </div>
-  """,
+""",
         unsafe_allow_html=True,
     )
 
@@ -578,7 +586,7 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         <br><br>
         To understand structural market behavior, the daily return distribution histogram maps out the exact shape of historical gains and losses. Analysts rely on this distribution to evaluate skewness and tail risk, observing the precise frequency of extreme daily positive or negative swings.
     </div>
-  """,
+""",
         unsafe_allow_html=True,
     )
 
@@ -590,7 +598,6 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         <br><br>
         The Multi-Asset Performance module solves this by rescaling every selected asset to start at a standardized baseline index of 100 on day one. This normalization technique enables analysts and portfolio strategists to instantly evaluate relative strength, growth divergence, and sector correlation across market leaders and major benchmarks side-by-side.
     </div>
-  """,
+""",
         unsafe_allow_html=True,
     )
- 
