@@ -257,6 +257,10 @@ if nav_choice == "📈 Price Action & Technicals":
         low_period = float(stock_df["Low"].min())
         total_volume = int(stock_df["Volume"].iloc[-1])
 
+        # Calculate volume vs 20-day average volume for professional metric representation
+        avg_volume = stock_df["Volume"].tail(20).mean()
+        vol_change_pct = ((total_volume - avg_volume) / avg_volume) * 100 if avg_volume > 0 else 0.0
+
         # Calculate institutional metrics: percentage distance from period peak and trough
         high_pct_from_peak = ((latest_close - high_period) / high_period) * 100
         low_pct_from_trough = ((latest_close - low_period) / low_period) * 100
@@ -277,7 +281,11 @@ if nav_choice == "📈 Price Action & Technicals":
             f"${low_period:,.2f}",
             f"{low_pct_from_trough:+.2f}% from trough",
         )
-        c4.metric("Latest Volume", f"{total_volume:,}", "Shares Traded")
+        c4.metric(
+            "Latest Volume",
+            f"{total_volume:,}",
+            f"{vol_change_pct:+.1f}% vs 20D Avg",
+        )
 
         st.markdown("---")
 
@@ -545,58 +553,63 @@ elif nav_choice == "🔗 Multi-Asset Performance & Spread":
         st.warning("Multi-asset comparison stream currently unavailable.")
 
 elif nav_choice == "📖 Analytics Guide & Overview":
-    st.subheader("📖 Analytics Guide & Overview")
+    st.subheader("📖 Analytics Guide & Operational Governance")
     st.markdown(
-        "A comprehensive executive walkthrough explaining how every metric, chart, and feature within AlphaQuant generates business value and analytical insight."
+        "A comprehensive executive guide designed for both technical and non-technical stakeholders, detailing KPI cards, chart mechanics, and data governance standards."
     )
 
-    st.markdown("### 🏢 Product Utility and Business Value")
+    st.markdown("### 🏢 Executive Summary & Business Value")
     st.markdown(
         """
     <div class="analytics-card">
-        In modern financial markets and corporate strategy, raw data tables are overwhelmingly dense, while static spreadsheet reports lack real-time interactivity. AlphaQuant addresses this challenge by functioning as an on-demand, institutional-grade Business Intelligence terminal. 
-        <br><br>
-        It empowers analysts, stakeholders, and strategic decision-makers to instantly evaluate asset performance, quantify risk exposure, and benchmark market leaders without requiring complex infrastructure or expensive proprietary desk software.
+        <b>For Non-Technical Stakeholders:</b> AlphaQuant eliminates the need for complex, expensive financial software by instantly translating dense stock market history into clear, interactive visual dashboards.<br>
+        <b>For Technical & Analytical Teams:</b> It serves as a robust institutional-grade BI pipeline built on optimized Python pandas structures, vectorised financial indicators, and resilient REST API ingestion layers.
     </div>
 """,
         unsafe_allow_html=True,
     )
 
-    st.markdown("### 📈 Price Action and Technical Analysis")
+    st.markdown("### 🏷️ KPI Metric Cards Breakdown")
     st.markdown(
         """
     <div class="analytics-card">
-        The top metric cards provide an immediate snapshot of market conditions, showing the latest closing price, period highs and lows, and overall trading liquidity at a glance. This allows stakeholders to gauge 24-hour momentum before diving deeper into historical trends.
-        <br><br>
-        The main price chart incorporates Simple Moving Averages over 20-day and 50-day windows. By smoothing out daily market noise, these trendlines help analysts spot short-term versus medium-term momentum shifts and potential trend reversals. Framing the price action, the Bollinger Band channel establishes dynamic market boundaries. When the bands contract tightly together, they signal an impending market breakout. When prices touch or exceed the outer boundaries, analysts can quickly identify overextended or overbought and oversold conditions.
-        <br><br>
-        Because market volume historically precedes price action, the volume bar chart displays daily trading activity. Volume spikes—intelligently formatted in Billions, Millions, or Thousands on hover—confirm the validity behind major price breakouts or sudden institutional sell-offs.
+        <ul>
+            <li><b>Live Close Price:</b> The most recent closing trading price in USD, accompanied by a 24-hour percentage change comparing today's close against the previous trading session's close.</li>
+            <li><b>Period High / Low:</b> The absolute highest and lowest prices reached during your selected timeframe window (e.g., 6mo, 1y), showing exact percentage distance from current price to help identify market peaks or troughs.</li>
+            <li><b>Latest Volume:</b> The total number of shares traded in the most recent session, accompanied by a performance delta measuring volume against the 20-day moving average volume to highlight institutional interest or unusual activity.</li>
+        </ul>
     </div>
 """,
         unsafe_allow_html=True,
     )
 
-    st.markdown("### 📊 Quantitative Risk and Volatility Intelligence")
+    st.markdown("### 📈 Visual Plots & Technical Indicator Guide")
     st.markdown(
         """
     <div class="analytics-card">
-        Evaluating asset performance without accounting for risk is incomplete. The summary risk metrics translate raw price fluctuations into standardized financial figures, presenting annualized standard deviation to inform portfolio managers of the risk profile associated with holding an asset over time.
-        <br><br>
-        Because market uncertainty is never constant, the 30-day rolling annualized volatility trend chart tracks how risk shifts dynamically. This visualization highlights specific volatility spikes or periods of relative calm corresponding to macroeconomic news cycles, earnings announcements, or geopolitical shifts.
-        <br><br>
-        To understand structural market behavior, the daily return distribution histogram maps out the exact shape of historical gains and losses. Analysts rely on this distribution to evaluate skewness and tail risk, observing the precise frequency of extreme daily positive or negative swings.
+        <ul>
+            <li><b>Price Action & Moving Averages (SMA 20 & SMA 50):</b> Smooths out daily price fluctuations to identify short-term (20-day) and medium-term (50-day) trend directions.</li>
+            <li><b>Bollinger Bands (Volatility Channels):</b> Dynamic upper and lower boundaries set two standard deviations away from the 20-day average. Tight contractions signal impending breakouts; touches outside the bands signal overbought/oversold conditions.</li>
+            <li><b>Daily Trading Volume Bar Chart:</b> Displays institutional liquidity over the last 60 sessions. Spikes confirm the conviction behind price breakouts or sell-offs.</li>
+            <li><b>30-Day Rolling Annualized Volatility Trend:</b> Tracks how asset risk shifts dynamically over time in response to earnings reports, news cycles, or macroeconomic events.</li>
+            <li><b>Daily Return Distribution Frequency:</b> A statistical histogram mapping out the frequency of daily gains and losses to evaluate skewness and tail risk.</li>
+            <li><b>Multi-Asset Comparative Spread:</b> Rescales multiple tickers to a common baseline index of 100 on day one, allowing clear peer and benchmark comparisons regardless of stock price differences.</li>
+        </ul>
     </div>
 """,
         unsafe_allow_html=True,
     )
 
-    st.markdown("### 🔗 Multi-Asset Comparative Performance")
+    st.markdown("### 🔒 Data Governance, Compliance & Architecture")
     st.markdown(
         """
     <div class="analytics-card">
-        Comparing a lower-priced equity directly against a high-value technology stock or cryptocurrency breaks standard visual scaling due to nominal price discrepancies. 
-        <br><br>
-        The Multi-Asset Performance module solves this by rescaling every selected asset to start at a standardized baseline index of 100 on day one. This normalization technique enables analysts and portfolio strategists to instantly evaluate relative strength, growth divergence, and sector correlation across market leaders and major benchmarks side-by-side.
+        <ul>
+            <li><b>Data Sourcing & Reliability:</b> Market data is ingested directly via secure endpoints from Yahoo Finance with automated validation checks on timestamps and quote payloads.</li>
+            <li><b>Caching & Performance Optimization:</b> Implements a 15-minute TTL cache (<code>@st.cache_data(ttl=900)</code>) to ensure sub-second response times while avoiding API rate limits and redundant network calls.</li>
+            <li><b>Resilient Error Handling:</b> Employs strict try-except wrappers, empty dataframe checks, and null-dropping routines to prevent application crashes when handling illiquid or delisted assets.</li>
+            <li><b>Transparency & Auditability:</b> All metrics and transformations use standard open-source financial formulas (standard deviation, percentage changes, rolling means) ensuring complete reproducibility for audits.</li>
+        </ul>
     </div>
 """,
         unsafe_allow_html=True,
