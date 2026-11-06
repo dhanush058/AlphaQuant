@@ -434,7 +434,7 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
         q1.metric(
             "Annualized Volatility (Risk)",
             f"{annualized_vol:.2f}%",
-            None,
+            " ",
             help="Annualized Standard Deviation",
         )
         q2.metric(
