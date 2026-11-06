@@ -422,13 +422,8 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
         ) * 100
         mean_return_val = stock_df["Daily_Return"].mean() * 100
 
-        # Comparative delta indicators against baseline/benchmarks
-        # Card 2 delta: compares current window return vs historical average expectation (~8% annualized adjusted for timeframe)
         expected_period_return = 8.0 * (len(stock_df) / 252.0)
         return_delta = cumulative_return - expected_period_return
-
-        # Card 3 delta: daily mean return compared to zero-line baseline
-        mean_delta = mean_return_val
 
         q1, q2, q3 = st.columns(3)
         q1.metric(
@@ -445,7 +440,7 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
         q3.metric(
             "Daily Mean Return",
             f"{mean_return_val:+.3f}%",
-            f"{mean_delta:+.3f}% vs baseline",
+            None,
         )
 
         st.markdown("---")
