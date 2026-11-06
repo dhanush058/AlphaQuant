@@ -29,7 +29,7 @@ st.markdown(
         padding: 12px 16px;
         border-radius: 8px;
         box-shadow: 0 4px 15px rgba(56, 189, 248, 0.1);
-        min-height: 95px; /* Forces uniform height across all metric cards */
+        min-height: 95px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -97,7 +97,6 @@ nav_choice = st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎯 Market Screener Input")
 
-# Comprehensive curated asset pool encompassing mega-cap tech, indices, crypto, and growth equities
 comprehensive_tickers = [
     "AAPL",
     "MSFT",
@@ -115,7 +114,6 @@ comprehensive_tickers = [
     "ETH-USD",
 ]
 
-# Fully dropdown-driven asset selection to ensure absolute data consistency and prevent analysis errors
 active_ticker = st.sidebar.selectbox(
     "Select Focus Asset", comprehensive_tickers, index=0
 )
@@ -135,7 +133,6 @@ st.sidebar.success(f"🔵 Active Asset: **{active_ticker}**")
 # ==========================================
 @st.cache_data(ttl=900, show_spinner=False)
 def fetch_raw_stock_data(ticker_symbol, period_str="2y"):
-    """Fetches a longer max/buffer window to ensure rolling indicators have sufficient history."""
     ticker_symbol = ticker_symbol.strip().upper()
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker_symbol}?interval=1d&range={period_str}"
     headers = {
@@ -178,12 +175,10 @@ def fetch_raw_stock_data(ticker_symbol, period_str="2y"):
 
 
 def fetch_live_stock_data(ticker_symbol, period_str="1y"):
-    """Fetches raw data with buffer history, computes indicators globally, then filters by timeframe."""
     raw_df = fetch_raw_stock_data(ticker_symbol, period_str="2y")
     if raw_df.empty:
         return raw_df
 
-    # Compute rolling indicators across the full buffer history FIRST
     raw_df["SMA_20"] = raw_df["Close"].rolling(window=20).mean()
     raw_df["SMA_50"] = raw_df["Close"].rolling(window=50).mean()
     raw_df["BB_Std"] = raw_df["Close"].rolling(window=20).std()
@@ -194,7 +189,6 @@ def fetch_live_stock_data(ticker_symbol, period_str="1y"):
         raw_df["Daily_Return"].rolling(window=30).std() * np.sqrt(252) * 100
     )
 
-    # Now slice down to the requested timeframe view
     max_date = raw_df.index.max()
     if period_str == "1mo":
         cutoff_date = max_date - pd.DateOffset(months=1)
@@ -250,7 +244,6 @@ if nav_choice == "📈 Price Action & Technicals":
     if not stock_df.empty and "Close" in stock_df.columns:
         latest_close = float(stock_df["Close"].iloc[-1])
         
-        # Robust prior close fetching to guarantee true 24h accuracy
         if len(stock_df) >= 2:
             prev_close = float(stock_df["Close"].iloc[-2])
         else:
@@ -261,11 +254,9 @@ if nav_choice == "📈 Price Action & Technicals":
         low_period = float(stock_df["Low"].min())
         total_volume = int(stock_df["Volume"].iloc[-1])
 
-        # Calculate volume vs 20-day average volume for professional metric representation
         avg_volume = stock_df["Volume"].tail(20).mean()
         vol_change_pct = ((total_volume - avg_volume) / avg_volume) * 100 if avg_volume > 0 else 0.0
 
-        # Calculate institutional metrics: percentage distance from period peak and trough
         high_pct_from_peak = ((latest_close - high_period) / high_period) * 100
         low_pct_from_trough = ((latest_close - low_period) / low_period) * 100
 
@@ -298,7 +289,6 @@ if nav_choice == "📈 Price Action & Technicals":
         )
 
         fig = go.Figure()
-        # Bollinger Bands fill trace first (rendered underneath)
         fig.add_trace(
             go.Scatter(
                 x=stock_df.index,
@@ -321,7 +311,6 @@ if nav_choice == "📈 Price Action & Technicals":
                 hoverinfo="skip",
             )
         )
-        # SMA traces with explicit date & value hover formatting
         fig.add_trace(
             go.Scatter(
                 x=stock_df.index,
@@ -342,7 +331,6 @@ if nav_choice == "📈 Price Action & Technicals":
                 hovertemplate="<b>Date</b>: %{x|%b %d, %Y}<br><b>SMA 50</b>: $%{y:,.2f}<extra></extra>",
             )
         )
-        # Close Price on top
         fig.add_trace(
             go.Scatter(
                 x=stock_df.index,
@@ -434,6 +422,14 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
         ) * 100
         mean_return_val = stock_df["Daily_Return"].mean() * 100
 
+        # Comparative delta indicators against baseline/benchmarks
+        # Card 2 delta: compares current window return vs historical average expectation (~8% annualized adjusted for timeframe)
+        expected_period_return = 8.0 * (len(stock_df) / 252.0)
+        return_delta = cumulative_return - expected_period_return
+
+        # Card 3 delta: daily mean return compared to zero-line baseline
+        mean_delta = mean_return_val
+
         q1, q2, q3 = st.columns(3)
         q1.metric(
             "Annualized Volatility (Risk)",
@@ -444,12 +440,12 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
         q2.metric(
             "Cumulative Period Return",
             f"{cumulative_return:+.2f}%",
-            f"{cumulative_return:+.2f}% ({timeframe})",
+            f"{return_delta:+.2f}% vs target",
         )
         q3.metric(
             "Daily Mean Return",
             f"{mean_return_val:+.3f}%",
-            f"{mean_return_val:+.3f}% vs baseline",
+            f"{mean_delta:+.3f}% vs baseline",
         )
 
         st.markdown("---")
