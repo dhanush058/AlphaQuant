@@ -29,6 +29,10 @@ st.markdown(
         padding: 12px 16px;
         border-radius: 8px;
         box-shadow: 0 4px 15px rgba(56, 189, 248, 0.1);
+        min-height: 95px; /* Forces uniform height across all metric cards */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
     div[data-testid="stMetric"]:hover {
         border-color: #0ea5e9;
@@ -434,7 +438,7 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
         q1.metric(
             "Annualized Volatility (Risk)",
             f"{annualized_vol:.2f}%",
-            " ",
+            None,
             help="Annualized Standard Deviation",
         )
         q2.metric(
