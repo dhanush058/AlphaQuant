@@ -575,6 +575,9 @@ elif nav_choice == "📖 Analytics Guide & Overview":
             <li><b>Live Close Price:</b> The most recent closing trading price in USD, accompanied by a 24-hour percentage change comparing today's close against the previous trading session's close.</li>
             <li><b>Period High / Low:</b> The absolute highest and lowest prices reached during your selected timeframe window (e.g., 6mo, 1y), showing exact percentage distance from current price to help identify market peaks or troughs.</li>
             <li><b>Latest Volume:</b> The total number of shares traded in the most recent session, accompanied by a performance delta measuring volume against the 20-day moving average volume to highlight institutional interest or unusual activity.</li>
+            <li><b>Annualized Volatility (Risk):</b> Measures the annualized standard deviation of daily returns, quantifying the total risk profile of the asset over the analysis window.</li>
+            <li><b>Cumulative Period Return:</b> Calculates the total percentage growth from the start of the timeframe to the latest close, paired with a comparative performance delta against an annualized benchmark target.</li>
+            <li><b>Daily Mean Return:</b> Displays the mathematical average of daily percentage returns across the active window to evaluate central tendency performance.</li>
         </ul>
     </div>
 """,
