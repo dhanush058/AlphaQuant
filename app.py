@@ -294,39 +294,7 @@ if nav_choice == "📈 Price Action & Technicals":
         )
 
         fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=stock_df.index,
-                y=stock_df["Close"],
-                mode="lines",
-                name="Close Price",
-                line=dict(color="#38bdf8", width=2),
-                hovertemplate=(
-                    "<b>Date</b>: %{x|%b %d, %Y}<br><b>Price</b>:"
-                    " $%{y:,.2f}<extra></extra>"
-                ),
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=stock_df.index,
-                y=stock_df["SMA_20"],
-                mode="lines",
-                name="SMA 20",
-                line=dict(color="#38bdf8", width=1.5, dash="dash"),
-                hovertemplate="<b>SMA 20</b>: $%{y:,.2f}<extra></extra>",
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=stock_df.index,
-                y=stock_df["SMA_50"],
-                mode="lines",
-                name="SMA 50",
-                line=dict(color="#f43f5e", width=1.5, dash="dash"),
-                hovertemplate="<b>SMA 50</b>: $%{y:,.2f}<extra></extra>",
-            )
-        )
+        # Bollinger Bands fill trace first (rendered underneath)
         fig.add_trace(
             go.Scatter(
                 x=stock_df.index,
@@ -347,6 +315,41 @@ if nav_choice == "📈 Price Action & Technicals":
                 fill="tonexty",
                 fillcolor="rgba(56, 189, 248, 0.08)",
                 hoverinfo="skip",
+            )
+        )
+        # SMA traces with explicit date & value hover formatting
+        fig.add_trace(
+            go.Scatter(
+                x=stock_df.index,
+                y=stock_df["SMA_20"],
+                mode="lines",
+                name="SMA 20",
+                line=dict(color="#38bdf8", width=1.5, dash="dash"),
+                hovertemplate="<b>Date</b>: %{x|%b %d, %Y}<br><b>SMA 20</b>: $%{y:,.2f}<extra></extra>",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=stock_df.index,
+                y=stock_df["SMA_50"],
+                mode="lines",
+                name="SMA 50",
+                line=dict(color="#f43f5e", width=1.5, dash="dash"),
+                hovertemplate="<b>Date</b>: %{x|%b %d, %Y}<br><b>SMA 50</b>: $%{y:,.2f}<extra></extra>",
+            )
+        )
+        # Close Price on top
+        fig.add_trace(
+            go.Scatter(
+                x=stock_df.index,
+                y=stock_df["Close"],
+                mode="lines",
+                name="Close Price",
+                line=dict(color="#38bdf8", width=2),
+                hovertemplate=(
+                    "<b>Date</b>: %{x|%b %d, %Y}<br><b>Price</b>:"
+                    " $%{y:,.2f}<extra></extra>"
+                ),
             )
         )
 
