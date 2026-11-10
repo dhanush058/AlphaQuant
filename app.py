@@ -362,7 +362,8 @@ if nav_choice == "📈 Price Action & Technicals":
         st.markdown("---")
         st.subheader("Daily Trading Volume Breakdown")
 
-        vol_tail = stock_df.tail(60).copy()
+        # FIX APPLIED HERE: Use stock_df directly so it dynamically respects the selected timeframe
+        vol_tail = stock_df.copy()
 
         def format_volume(val):
             if val >= 1e9:
@@ -591,7 +592,7 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         <ul>
             <li><b>Price Action & Moving Averages (SMA 20 & SMA 50):</b> Smooths out daily price fluctuations to identify short-term (20-day) and medium-term (50-day) trend directions.</li>
             <li><b>Bollinger Bands (Volatility Channels):</b> Dynamic upper and lower boundaries set two standard deviations away from the 20-day average. Tight contractions signal impending breakouts; touches outside the bands signal overbought/oversold conditions.</li>
-            <li><b>Daily Trading Volume Bar Chart:</b> Displays institutional liquidity over the last 60 sessions. Spikes confirm the conviction behind price breakouts or sell-offs.</li>
+            <li><b>Daily Trading Volume Bar Chart:</b> Displays institutional liquidity over the active sessions. Spikes confirm the conviction behind price breakouts or sell-offs.</li>
             <li><b>30-Day Rolling Annualized Volatility Trend:</b> Tracks how asset risk shifts dynamically over time in response to earnings reports, news cycles, or macroeconomic events.</li>
             <li><b>Daily Return Distribution Frequency:</b> A statistical histogram mapping out the frequency of daily gains and losses to evaluate skewness and tail risk.</li>
             <li><b>Multi-Asset Comparative Spread:</b> Rescales multiple tickers to a common baseline index of 100 on day one, allowing clear peer and benchmark comparisons regardless of stock price differences.</li>
