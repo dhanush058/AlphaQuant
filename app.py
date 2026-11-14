@@ -292,20 +292,20 @@ if nav_choice == "📈 Price Action & Technicals":
         annualized_vol_val = float(stock_df["Daily_Return"].std() * np.sqrt(252) * 100) if "Daily_Return" in stock_df else 0.0
 
         if latest_close > sma_20_val and sma_20_val > sma_50_val:
-            trend_summary = "Bullish momentum is confirmed above both the 20-day and 50-day moving averages, indicating sustained trend support while price holds above the 20-day average."
+            trend_summary = "Holding above both the 20-day and 50-day moving averages keeps short- and medium-term momentum constructive, with the 20-day line acting as the nearest dynamic support zone to watch."
         elif latest_close < sma_20_val and sma_20_val < sma_50_val:
-            trend_summary = "Bearish pressure persists below both the 20-day and 50-day moving averages, warranting caution against premature counter-trend entries until price reclaims short-term resistance."
+            trend_summary = "Trading below both the 20-day and 50-day moving averages signals persistent downward pressure, pointing to caution on early counter-trend entries until short-term resistance is reclaimed."
         else:
-            trend_summary = "Price is consolidating around key moving averages, favoring range-bound discipline and waiting for a confirmed breakout or breakdown before directional positioning."
+            trend_summary = "Price is consolidating around key moving averages, favoring range discipline and waiting for a confirmed breakout or breakdown before taking directional exposure."
 
         if vol_change_pct > 15:
-            volume_summary = f"Institutional volume is elevated at {vol_change_pct:+.1f}% vs. the 20-day average, reinforcing conviction behind recent price movement."
+            volume_summary = f"Volume is elevated at {vol_change_pct:+.1f}% vs. its 20-day average, supporting stronger conviction behind recent price action."
         elif vol_change_pct < -15:
-            volume_summary = f"Institutional volume is light at {vol_change_pct:+.1f}% vs. the 20-day average, signaling lower breakout conviction and potential liquidity slippage."
+            volume_summary = f"Volume is {vol_change_pct:+.1f}% below its 20-day average, indicating lighter participation that can temper breakout follow-through and widen execution slippage on larger orders."
         else:
-            volume_summary = f"Institutional volume is aligned near the 20-day baseline ({vol_change_pct:+.1f}%), indicating steady participation without abnormal flow spikes."
+            volume_summary = f"Volume is tracking near its 20-day average ({vol_change_pct:+.1f}%), pointing to steady participation without an unusual surge or drop in activity."
 
-        risk_summary = f"Annualized volatility is {annualized_vol_val:.2f}% with price at {high_pct_from_peak:+.2f}% from its {timeframe.upper()} peak, requiring position sizing and stop tolerances calibrated to current swing risk."
+        risk_summary = f"Annualized volatility sits at {annualized_vol_val:.2f}% with price {high_pct_from_peak:+.2f}% off its {timeframe.upper()} high, highlighting wide swing ranges that call for disciplined position sizing and wider stop buffers."
 
         st.markdown(
             f"""
@@ -316,7 +316,7 @@ if nav_choice == "📈 Price Action & Technicals":
                 <div style="font-size: 0.9rem; color: #f8fafc; line-height: 1.6;">
                     <ul style="margin: 0; padding-left: 18px;">
                         <li><b>Trend Structure:</b> {trend_summary}</li>
-                        <li><b>Liquidity & Volume:</b> {volume_summary}</li>
+                        <li><b>Volume & Participation:</b> {volume_summary}</li>
                         <li><b>Risk Profile:</b> {risk_summary}</li>
                     </ul>
                 </div>
