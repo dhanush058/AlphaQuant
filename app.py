@@ -284,6 +284,35 @@ if nav_choice == "📈 Price Action & Technicals":
 
         st.markdown("---")
 
+        # ==========================================
+        # REAL-WORLD EXECUTIVE BRIEFING BANNER
+        # ==========================================
+        sma_20_val = float(stock_df["SMA_20"].iloc[-1]) if not np.isnan(stock_df["SMA_20"].iloc[-1]) else latest_close
+        sma_50_val = float(stock_df["SMA_50"].iloc[-1]) if not np.isnan(stock_df["SMA_50"].iloc[-1]) else latest_close
+        
+        if latest_close > sma_20_val and sma_20_val > sma_50_val:
+            trend_desc = "Bullish Trend Alignment (Price > SMA 20 > SMA 50)"
+        elif latest_close < sma_20_val and sma_20_val < sma_50_val:
+            trend_desc = "Bearish Trend Pressure (Price < SMA 20 < SMA 50)"
+        else:
+            trend_desc = "Neutral Market Consolidation / Mean Reversion"
+
+        vol_desc = f"significant volume activity (+{vol_change_pct:.1f}% vs 20D baseline)" if vol_change_pct > 15 else (f"subdued volume participation ({vol_change_pct:.1f}% vs 20D baseline)" if vol_change_pct < -15 else "normal institutional liquidity flow")
+
+        st.markdown(
+            f"""
+            <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-left: 4px solid #38bdf8; border: 1px solid #334151; padding: 16px 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <div style="font-size: 0.75rem; color: #7dd3fc; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">
+                    ⚡ Executive Market Intelligence Briefing
+                </div>
+                <div style="font-size: 0.95rem; color: #f8fafc; line-height: 1.6;">
+                    <b>{active_ticker}</b> is currently demonstrating <b>{trend_desc}</b> with a live close of <b>${latest_close:,.2f}</b> ({daily_change_pct:+.2f}% 24h). Telemetry indicates <b>{vol_desc}</b>, positioning the asset at <b>{high_pct_from_peak:+.2f}%</b> relative to its <i>{timeframe.upper()}</i> period peak.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
         st.subheader(
             f"Price Action, Moving Averages & Bollinger Bands ({active_ticker})"
         )
@@ -362,7 +391,6 @@ if nav_choice == "📈 Price Action & Technicals":
         st.markdown("---")
         st.subheader("Daily Trading Volume Breakdown")
 
-        # FIX APPLIED HERE: Use stock_df directly so it dynamically respects the selected timeframe
         vol_tail = stock_df.copy()
 
         def format_volume(val):
