@@ -292,14 +292,20 @@ if nav_choice == "📈 Price Action & Technicals":
         annualized_vol_val = float(stock_df["Daily_Return"].std() * np.sqrt(252) * 100) if "Daily_Return" in stock_df else 0.0
 
         if latest_close > sma_20_val and sma_20_val > sma_50_val:
-            trend_summary = "Bullish momentum confirmed with price structure trading securely above both 20-day and 50-day moving averages."
+            trend_summary = "Bullish momentum is confirmed above both the 20-day and 50-day moving averages, indicating sustained trend support while price holds above the 20-day average."
         elif latest_close < sma_20_val and sma_20_val < sma_50_val:
-            trend_summary = "Bearish price action observed with downward pressure below core short and medium-term moving averages."
+            trend_summary = "Bearish pressure persists below both the 20-day and 50-day moving averages, warranting caution against premature counter-trend entries until price reclaims short-term resistance."
         else:
-            trend_summary = "Neutral market consolidation phase characterized by frequent mean-reversion around active moving averages."
+            trend_summary = "Price is consolidating around key moving averages, favoring range-bound discipline and waiting for a confirmed breakout or breakdown before directional positioning."
 
-        volume_summary = f"Institutional liquidity is tracking at {vol_change_pct:+.1f}% relative to the 20-day baseline average."
-        risk_summary = f"Annualized volatility stands at {annualized_vol_val:.2f}%, with the asset positioned {high_pct_from_peak:+.2f}% away from its {timeframe.upper()} peak."
+        if vol_change_pct > 15:
+            volume_summary = f"Institutional volume is elevated at {vol_change_pct:+.1f}% vs. the 20-day average, reinforcing conviction behind recent price movement."
+        elif vol_change_pct < -15:
+            volume_summary = f"Institutional volume is light at {vol_change_pct:+.1f}% vs. the 20-day average, signaling lower breakout conviction and potential liquidity slippage."
+        else:
+            volume_summary = f"Institutional volume is aligned near the 20-day baseline ({vol_change_pct:+.1f}%), indicating steady participation without abnormal flow spikes."
+
+        risk_summary = f"Annualized volatility is {annualized_vol_val:.2f}% with price at {high_pct_from_peak:+.2f}% from its {timeframe.upper()} peak, requiring position sizing and stop tolerances calibrated to current swing risk."
 
         st.markdown(
             f"""
