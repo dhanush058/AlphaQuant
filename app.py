@@ -291,21 +291,81 @@ if nav_choice == "📈 Price Action & Technicals":
         sma_50_val = float(stock_df["SMA_50"].iloc[-1]) if not np.isnan(stock_df["SMA_50"].iloc[-1]) else latest_close
         annualized_vol_val = float(stock_df["Daily_Return"].std() * np.sqrt(252) * 100) if "Daily_Return" in stock_df else 0.0
 
+        first_close = float(stock_df["Close"].iloc[0])
+        period_return_pct = ((latest_close - first_close) / first_close) * 100 if first_close != 0 else 0.0
+        sma20_gap_pct = ((latest_close - sma_20_val) / sma_20_val) * 100 if sma_20_val != 0 else 0.0
+        sma50_gap_pct = ((latest_close - sma_50_val) / sma_50_val) * 100 if sma_50_val != 0 else 0.0
+        range_pos_pct = (
+            ((latest_close - low_period) / (high_period - low_period)) * 100
+            if high_period > low_period
+            else 50.0
+        )
+
+        is_crypto = active_ticker.endswith("-USD")
+        is_index = active_ticker in ("SPY", "QQQ")
+        asset_label = "spot pair" if is_crypto else ("index ETF" if is_index else "equity")
+
         if latest_close > sma_20_val and sma_20_val > sma_50_val:
-            trend_summary = "Holding above both the 20-day and 50-day moving averages keeps short- and medium-term momentum constructive, with the 20-day line acting as the nearest dynamic support zone to watch."
+            trend_summary = (
+                f"{active_ticker} is trading {sma20_gap_pct:+.1f}% above its 20-day SMA (${sma_20_val:,.2f}) and "
+                f"{sma50_gap_pct:+.1f}% above its 50-day SMA (${sma_50_val:,.2f}), delivering a {period_return_pct:+.1f}% "
+                f"return over {timeframe.upper()} with the 20-day average serving as nearby support."
+            )
         elif latest_close < sma_20_val and sma_20_val < sma_50_val:
-            trend_summary = "Trading below both the 20-day and 50-day moving averages signals persistent downward pressure, pointing to caution on early counter-trend entries until short-term resistance is reclaimed."
+            trend_summary = (
+                f"{active_ticker} sits {sma20_gap_pct:+.1f}% below its 20-day SMA (${sma_20_val:,.2f}) and "
+                f"{sma50_gap_pct:+.1f}% below its 50-day SMA (${sma_50_val:,.2f}), reflecting {period_return_pct:+.1f}% "
+                f"cumulative {timeframe.upper()} performance with overhead resistance near the shorter moving average."
+            )
+        elif latest_close > sma_20_val and latest_close < sma_50_val:
+            trend_summary = (
+                f"{active_ticker} has rebounded {sma20_gap_pct:+.1f}% above its 20-day SMA (${sma_20_val:,.2f}) "
+                f"while remaining {sma50_gap_pct:+.1f}% below its 50-day SMA (${sma_50_val:,.2f}), marking a "
+                f"short-term recovery attempt inside a broader {period_return_pct:+.1f}% ({timeframe.upper()}) trajectory."
+            )
         else:
-            trend_summary = "Price is consolidating around key moving averages, favoring range discipline and waiting for a confirmed breakout or breakdown before taking directional exposure."
+            trend_summary = (
+                f"{active_ticker} has slipped {sma20_gap_pct:+.1f}% below its 20-day SMA (${sma_20_val:,.2f}) "
+                f"while holding {sma50_gap_pct:+.1f}% above its 50-day SMA (${sma_50_val:,.2f}), showing "
+                f"near-term cooling within a {period_return_pct:+.1f}% ({timeframe.upper()}) move."
+            )
 
-        if vol_change_pct > 15:
-            volume_summary = f"Volume is elevated at {vol_change_pct:+.1f}% vs. its 20-day average, supporting stronger conviction behind recent price action."
-        elif vol_change_pct < -15:
-            volume_summary = f"Volume is {vol_change_pct:+.1f}% below its 20-day average, indicating lighter participation that can temper breakout follow-through and widen execution slippage on larger orders."
+        if vol_change_pct > 25:
+            volume_summary = (
+                f"{active_ticker} recorded a strong {vol_change_pct:+.1f}% surge above its 20-day volume norm "
+                f"alongside a {daily_change_pct:+.2f}% latest session move, pointing to heightened {asset_label} activity."
+            )
+        elif vol_change_pct > 10:
+            volume_summary = (
+                f"{active_ticker} activity is {vol_change_pct:+.1f}% above its 20-day average ({daily_change_pct:+.2f}% "
+                f"latest session), showing firmer participation backing recent price movement."
+            )
+        elif vol_change_pct < -25:
+            volume_summary = (
+                f"{active_ticker} volume is sharply lighter at {vol_change_pct:+.1f}% vs. its 20-day average "
+                f"({daily_change_pct:+.2f}% latest move), indicating thinner {asset_label} depth and higher slippage risk on size."
+            )
+        elif vol_change_pct < -10:
+            volume_summary = (
+                f"{active_ticker} volume trails its 20-day average by {abs(vol_change_pct):.1f}% ({daily_change_pct:+.2f}% "
+                f"latest move), signaling softer follow-through on directional pushes."
+            )
         else:
-            volume_summary = f"Volume is tracking near its 20-day average ({vol_change_pct:+.1f}%), pointing to steady participation without an unusual surge or drop in activity."
+            volume_summary = (
+                f"{active_ticker} volume is right around its 20-day average ({vol_change_pct:+.1f}%), with a "
+                f"{daily_change_pct:+.2f}% latest move reflecting routine day-to-day participation."
+            )
 
-        risk_summary = f"Annualized volatility sits at {annualized_vol_val:.2f}% with price {high_pct_from_peak:+.2f}% off its {timeframe.upper()} high, highlighting wide swing ranges that call for disciplined position sizing and wider stop buffers."
+        vol_regime = (
+            "elevated swing dispersion"
+            if annualized_vol_val >= 45.0
+            else ("moderate price swings" if annualized_vol_val >= 22.0 else "relatively contained fluctuations")
+        )
+        risk_summary = (
+            f"{active_ticker} shows {annualized_vol_val:.2f}% annualized volatility ({vol_regime}), sitting "
+            f"{high_pct_from_peak:+.2f}% from its {timeframe.upper()} peak (${high_period:,.2f}) and at the "
+            f"{range_pos_pct:.0f}th percentile of its {timeframe.upper()} high-low band."
+        )
 
         st.markdown(
             f"""
