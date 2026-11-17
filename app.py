@@ -149,11 +149,11 @@ def fetch_raw_stock_data(ticker_symbol, period_str="2y"):
         data = response.json()
         if not data.get("chart", {}).get("result"):
             return pd.DataFrame()
-            
+
         result = data["chart"]["result"][0]
         if "timestamp" not in result or not result.get("indicators", {}).get("quote"):
             return pd.DataFrame()
-            
+
         timestamps = result["timestamp"]
         quote = result["indicators"]["quote"][0]
 
@@ -221,6 +221,23 @@ def fetch_multi_asset_data(tuple_tickers, period_str="1y"):
     return pd.DataFrame()
 
 
+def _colorize_signed(text, sentiment="positive"):
+    color = "#4ade80" if sentiment == "positive" else "#f87171"
+    return f'<span style="color: {color}; font-weight: 600;">{text}</span>'
+
+
+def _fmt_signed(val, fmt, sentiment="positive"):
+    return _colorize_signed(format(val, fmt), sentiment)
+
+
+def _sign_sentiment(val):
+    if val > 0:
+        return "positive"
+    if val < 0:
+        return "negative"
+    return "positive"
+
+
 # ==========================================
 # VIEW ROUTING
 # ==========================================
@@ -243,12 +260,12 @@ if nav_choice == "📈 Price Action & Technicals":
 
     if not stock_df.empty and "Close" in stock_df.columns:
         latest_close = float(stock_df["Close"].iloc[-1])
-        
+
         if len(stock_df) >= 2:
             prev_close = float(stock_df["Close"].iloc[-2])
         else:
             prev_close = latest_close
-            
+
         daily_change_pct = ((latest_close - prev_close) / prev_close) * 100
         high_period = float(stock_df["High"].max())
         low_period = float(stock_df["Low"].min())
@@ -305,55 +322,70 @@ if nav_choice == "📈 Price Action & Technicals":
         is_index = active_ticker in ("SPY", "QQQ")
         asset_label = "spot pair" if is_crypto else ("index ETF" if is_index else "equity")
 
+        s20_str = _fmt_signed(sma20_gap_pct, "+.1f%", _sign_sentiment(sma20_gap_pct))
+        s50_str = _fmt_signed(sma50_gap_pct, "+.1f%", _sign_sentiment(sma50_gap_pct))
+        ret_str = _fmt_signed(period_return_pct, "+.1f%", _sign_sentiment(period_return_pct))
+
         if latest_close > sma_20_val and sma_20_val > sma_50_val:
             trend_summary = (
-                f"{active_ticker} is trading {sma20_gap_pct:+.1f}% above its 20-day SMA (${sma_20_val:,.2f}) and "
-                f"{sma50_gap_pct:+.1f}% above its 50-day SMA (${sma_50_val:,.2f}), delivering a {period_return_pct:+.1f}% "
+                f"{active_ticker} is trading {s20_str} above its 20-day SMA (${sma_20_val:,.2f}) and "
+                f"{s50_str} above its 50-day SMA (${sma_50_val:,.2f}), delivering a {ret_str} "
                 f"return over {timeframe.upper()} with the 20-day average serving as nearby support."
             )
         elif latest_close < sma_20_val and sma_20_val < sma_50_val:
             trend_summary = (
-                f"{active_ticker} sits {sma20_gap_pct:+.1f}% below its 20-day SMA (${sma_20_val:,.2f}) and "
-                f"{sma50_gap_pct:+.1f}% below its 50-day SMA (${sma_50_val:,.2f}), reflecting {period_return_pct:+.1f}% "
+                f"{active_ticker} sits {s20_str} below its 20-day SMA (${sma_20_val:,.2f}) and "
+                f"{s50_str} below its 50-day SMA (${sma_50_val:,.2f}), reflecting {ret_str} "
                 f"cumulative {timeframe.upper()} performance with overhead resistance near the shorter moving average."
             )
         elif latest_close > sma_20_val and latest_close < sma_50_val:
             trend_summary = (
-                f"{active_ticker} has rebounded {sma20_gap_pct:+.1f}% above its 20-day SMA (${sma_20_val:,.2f}) "
-                f"while remaining {sma50_gap_pct:+.1f}% below its 50-day SMA (${sma_50_val:,.2f}), marking a "
-                f"short-term recovery attempt inside a broader {period_return_pct:+.1f}% ({timeframe.upper()}) trajectory."
+                f"{active_ticker} has rebounded {s20_str} above its 20-day SMA (${sma_20_val:,.2f}) "
+                f"while remaining {s50_str} below its 50-day SMA (${sma_50_val:,.2f}), marking a "
+                f"short-term recovery attempt inside a broader {ret_str} ({timeframe.upper()}) trajectory."
             )
         else:
             trend_summary = (
-                f"{active_ticker} has slipped {sma20_gap_pct:+.1f}% below its 20-day SMA (${sma_20_val:,.2f}) "
-                f"while holding {sma50_gap_pct:+.1f}% above its 50-day SMA (${sma_50_val:,.2f}), showing "
-                f"near-term cooling within a {period_return_pct:+.1f}% ({timeframe.upper()}) move."
+                f"{active_ticker} has slipped {s20_str} below its 20-day SMA (${sma_20_val:,.2f}) "
+                f"while holding {s50_str} above its 50-day SMA (${sma_50_val:,.2f}), showing "
+                f"near-term cooling within a {ret_str} ({timeframe.upper()}) move."
             )
 
+        # Volume context: surge (>25%) or firm (>10%) is constructive/green; sharp drop (<-25%) or soft dip (<-10%) is weak/red; neutral stays green
         if vol_change_pct > 25:
+            vol_str = _fmt_signed(vol_change_pct, "+.1f%", "positive")
+            chg_str = _fmt_signed(daily_change_pct, "+.2f%", _sign_sentiment(daily_change_pct))
             volume_summary = (
-                f"{active_ticker} recorded a strong {vol_change_pct:+.1f}% surge above its 20-day volume norm "
-                f"alongside a {daily_change_pct:+.2f}% latest session move, pointing to heightened {asset_label} activity."
+                f"{active_ticker} recorded a strong {vol_str} surge above its 20-day volume norm "
+                f"alongside a {chg_str} latest session move, pointing to heightened {asset_label} activity."
             )
         elif vol_change_pct > 10:
+            vol_str = _fmt_signed(vol_change_pct, "+.1f%", "positive")
+            chg_str = _fmt_signed(daily_change_pct, "+.2f%", _sign_sentiment(daily_change_pct))
             volume_summary = (
-                f"{active_ticker} activity is {vol_change_pct:+.1f}% above its 20-day average ({daily_change_pct:+.2f}% "
+                f"{active_ticker} activity is {vol_str} above its 20-day average ({chg_str} "
                 f"latest session), showing firmer participation backing recent price movement."
             )
         elif vol_change_pct < -25:
+            vol_str = _fmt_signed(vol_change_pct, "+.1f%", "negative")
+            chg_str = _fmt_signed(daily_change_pct, "+.2f%", _sign_sentiment(daily_change_pct))
             volume_summary = (
-                f"{active_ticker} volume is sharply lighter at {vol_change_pct:+.1f}% vs. its 20-day average "
-                f"({daily_change_pct:+.2f}% latest move), indicating thinner {asset_label} depth and higher slippage risk on size."
+                f"{active_ticker} volume is sharply lighter at {vol_str} vs. its 20-day average "
+                f"({chg_str} latest move), indicating thinner {asset_label} depth and higher slippage risk on size."
             )
         elif vol_change_pct < -10:
+            vol_str = _fmt_signed(vol_change_pct, "+.1f%", "negative")
+            chg_str = _fmt_signed(daily_change_pct, "+.2f%", _sign_sentiment(daily_change_pct))
             volume_summary = (
-                f"{active_ticker} volume trails its 20-day average by {abs(vol_change_pct):.1f}% ({daily_change_pct:+.2f}% "
+                f"{active_ticker} volume trails its 20-day average by {abs(vol_change_pct):.1f}% ({chg_str} "
                 f"latest move), signaling softer follow-through on directional pushes."
             )
         else:
+            vol_str = _fmt_signed(vol_change_pct, "+.1f%", "positive")
+            chg_str = _fmt_signed(daily_change_pct, "+.2f%", _sign_sentiment(daily_change_pct))
             volume_summary = (
-                f"{active_ticker} volume is right around its 20-day average ({vol_change_pct:+.1f}%), with a "
-                f"{daily_change_pct:+.2f}% latest move reflecting routine day-to-day participation."
+                f"{active_ticker} volume is right around its 20-day average ({vol_str}), with a "
+                f"{chg_str} latest move reflecting routine day-to-day participation."
             )
 
         vol_regime = (
@@ -361,9 +393,12 @@ if nav_choice == "📈 Price Action & Technicals":
             if annualized_vol_val >= 45.0
             else ("moderate price swings" if annualized_vol_val >= 22.0 else "relatively contained fluctuations")
         )
+        # Distance from peak: > -5% near highs is favorable/green; deeper pullback <= -5% is drawdown/red
+        peak_sentiment = "positive" if high_pct_from_peak > -5.0 else "negative"
+        peak_str = _fmt_signed(high_pct_from_peak, "+.2f%", peak_sentiment)
         risk_summary = (
             f"{active_ticker} shows {annualized_vol_val:.2f}% annualized volatility ({vol_regime}), sitting "
-            f"{high_pct_from_peak:+.2f}% from its {timeframe.upper()} peak (${high_period:,.2f}) and at the "
+            f"{peak_str} from its {timeframe.upper()} peak (${high_period:,.2f}) and at the "
             f"{range_pos_pct:.0f}th percentile of its {timeframe.upper()} high-low band."
         )
 
