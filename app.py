@@ -227,7 +227,9 @@ def _colorize_signed(text, sentiment="positive"):
 
 
 def _fmt_signed(val, fmt, sentiment="positive"):
-    return _colorize_signed(format(val, fmt), sentiment)
+    spec = fmt[:-1] if fmt.endswith("%") else fmt
+    suffix = "%" if fmt.endswith("%") else ""
+    return _colorize_signed(f"{format(val, spec)}{suffix}", sentiment)
 
 
 def _sign_sentiment(val):
