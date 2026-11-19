@@ -654,39 +654,50 @@ elif nav_choice == "🔗 Multi-Asset Performance & Spread":
         "Comparing normalized cumulative percentage growth across key market leaders (Baseline = 100):"
     )
 
-    with st.spinner("Fetching multi-asset sector stream..."):
-        multi_tickers = ("AAPL", "MSFT", "NVDA", "TSLA", "SPY", "QQQ")
-        multi_df = fetch_multi_asset_data(multi_tickers, timeframe)
+    selected_basket = st.multiselect(
+        "Comparison Basket (Select 2 to 6 assets):",
+        options=comprehensive_tickers,
+        default=["AAPL", "MSFT", "NVDA", "TSLA", "SPY", "QQQ"],
+        max_selections=6,
+    )
+    st.caption(f"Showing {len(selected_basket)} of 6 max assets · Min 2 required")
 
-    if not multi_df.empty and len(multi_df) > 0:
-        norm_df = (multi_df / multi_df.iloc[0]) * 100
-
-        fig_multi = px.line(norm_df)
-        fig_multi.update_layout(
-            paper_bgcolor="#0f172a",
-            plot_bgcolor="#1e293b",
-            font=dict(color="#f8fafc"),
-            height=480,
-            margin=dict(l=20, r=20, t=30, b=20),
-            xaxis=dict(showgrid=True, gridcolor="#334155", title=""),
-            yaxis=dict(
-                showgrid=True,
-                gridcolor="#334155",
-                title="Normalized Growth (Base = 100)",
-            ),
-            legend=dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-            ),
-        )
-        fig_multi.update_traces(
-            hovertemplate=(
-                "<b>Date</b>: %{x|%b %d, %Y}<br><b>Index Value</b>:"
-                " %{y:,.2f}<extra></extra>"
-            )
-        )
-        st.plotly_chart(fig_multi, use_container_width=True)
+    if len(selected_basket) < 2:
+        st.info("Select at least 2 assets (up to 6) to compare normalized cumulative growth.")
     else:
-        st.warning("Multi-asset comparison stream currently unavailable.")
+        with st.spinner("Fetching multi-asset sector stream..."):
+            multi_tickers = tuple(selected_basket)
+            multi_df = fetch_multi_asset_data(multi_tickers, timeframe)
+
+        if not multi_df.empty and len(multi_df) > 0:
+            norm_df = (multi_df / multi_df.iloc[0]) * 100
+
+            fig_multi = px.line(norm_df)
+            fig_multi.update_layout(
+                paper_bgcolor="#0f172a",
+                plot_bgcolor="#1e293b",
+                font=dict(color="#f8fafc"),
+                height=480,
+                margin=dict(l=20, r=20, t=30, b=20),
+                xaxis=dict(showgrid=True, gridcolor="#334155", title=""),
+                yaxis=dict(
+                    showgrid=True,
+                    gridcolor="#334155",
+                    title="Normalized Growth (Base = 100)",
+                ),
+                legend=dict(
+                    orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+                ),
+            )
+            fig_multi.update_traces(
+                hovertemplate=(
+                    "<b>Date</b>: %{x|%b %d, %Y}<br><b>Index Value</b>:"
+                    " %{y:,.2f}<extra></extra>"
+                )
+            )
+            st.plotly_chart(fig_multi, use_container_width=True)
+        else:
+            st.warning("Multi-asset comparison stream currently unavailable.")
 
 elif nav_choice == "📖 Analytics Guide & Overview":
     st.subheader("📖 Analytics Guide & Operational Governance")
