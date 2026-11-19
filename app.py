@@ -50,6 +50,15 @@ st.markdown(
         font-weight: 700;
         font-size: 1.25rem;
     }
+    span[data-baseweb="tag"] {
+        background-color: rgba(56, 189, 248, 0.16) !important;
+        border: 1px solid #22d3ee !important;
+        color: #67e8f9 !important;
+        box-shadow: 0 0 10px rgba(34, 211, 238, 0.25) !important;
+    }
+    span[data-baseweb="tag"] svg {
+        fill: #67e8f9 !important;
+    }
     h1, h2, h3 {
         color: #f8fafc;
         font-family: 'Inter', sans-serif;
