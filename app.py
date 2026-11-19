@@ -691,7 +691,7 @@ elif nav_choice == "🔗 Multi-Asset Performance & Spread":
             )
             fig_multi.update_traces(
                 hovertemplate=(
-                    "<b>Date</b>: %{x|%b %d, %Y}<br><b>Index Value</b>:"
+                    "<b>Asset</b>: %{fullData.name}<br><b>Date</b>: %{x|%b %d, %Y}<br><b>Index Value</b>:"
                     " %{y:,.2f}<extra></extra>"
                 )
             )
