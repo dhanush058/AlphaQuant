@@ -1,54 +1,54 @@
 # 📈 AlphaQuant Financial Intelligence & Quantitative Risk Terminal
 
-An enterprise-grade financial analytics and risk terminal designed to stream live market data, calculate automated risk metrics, and visualize multi-asset intelligence across an executive-grade interface.
+An interactive market intelligence and quantitative risk terminal built with Python, Pandas, NumPy, Plotly, and Streamlit to stream daily market data, compute technical and volatility indicators, and compare multi-asset performance.
 
-This tool solves a common headache in data analysis: when you calculate trends over time (like a 30-day average), traditional apps often leave annoying blank spaces or errors at the start of your chart. AlphaQuant fixes this by pulling a full historical buffer under the hood, running all calculations completely first, and then letting you zoom into any timeframe smoothly without breaking the math.
+Computing rolling indicators directly inside a zoomed or filtered chart window often leaves leading `NaN` gaps or distorts early trend values. AlphaQuant avoids this by ingesting a 2-year historical buffer first, calculating rolling statistics across the full series, and slicing cleanly to the selected lookback window.
 
-🔗 **Live Production Deployment URL:** https://github.com/dhanush058/AlphaQuant
+🔗 **Live URL:** https://alphaquant-analytics.streamlit.app/
 
-### 🚀 Business Impact & Professional Analytics Metrics
+### 🎯 Overview & Supported Asset Universe: 
+AlphaQuant supports **14 market instruments** across large-cap equities, broad market ETFs, and spot crypto pairs:
+- **Equities:** `AAPL`, `MSFT`, `GOOGL`, `AMZN`, `NVDA`, `META`, `TSLA`, `AMD`, `NFLX`, `INTC`
+- **Index ETFs:** `SPY`, `QQQ`
+- **Crypto Pairs:** `BTC-USD`, `ETH-USD`
 
-- **Data Architecture & Error Elimination:** Solved missing data gaps in charts by engineering a two-stage pipeline—processing historical calculations across a full 2-year buffer *before* letting users filter or zoom into specific timeframes.
-  
-- **Advanced Risk Tracking:** Built automated volatility tracking that measures how wildly a stock or asset is swinging over a rolling 30-day window, helping spot sudden market risks and calm periods instantly.
-  
-- **Apples-to-Apples Comparisons:** Created a normalization engine that sets different assets to a shared starting point ($100$), making it easy to compare a high-priced stock against a lower-priced index on the exact same chart.
+**Interactive Controls:**
+- **Navigation Views:** Switch between *Price Action & Technicals*, *Quantitative Risk & Volatility*, *Multi-Asset Performance & Spread*, and *Analytics Guide & Overview*.
+- **Timeframe Windows:** `1mo`, `3mo`, `6mo`, `1y`, and `2y`.
+- **Comparison Basket:** Select **2 to 6 assets** for normalized relative performance tracking.
 
-### 🏗️ How It Works (System Architecture & Pipeline)
+### 🚀 Key Capabilities & Analytical Methodology:
 
-**Pipeline Workflow:** 
+#### 1. Buffer-First Indicator Pipeline:
+- Fetches a 2-year daily OHLCV dataset from the Yahoo Finance chart endpoint (`https://query1.finance.yahoo.com/v8/finance/chart/{ticker}`) via `requests`.
+- Calculates rolling indicators across the full buffer before filtering to the active timeframe (`1mo`–`2y`) so moving averages and volatility curves stay consistent.
 
-1. **Live Data Ingestion**: Automatically pulls fresh daily closing prices directly from financial APIs, using smart local caching to keep the app fast and responsive.
-   
-2. **Behind-the-Scenes Math**: Calculates moving averages, price trends, and risk percentages across the entire history buffer before any user clicks a filter.
+#### 2. Technical & Volume Analytics (*Price Action & Technicals*):
+- **KPI Summary Cards:** Displays latest close price with 24-hour change, period high/low with percentage distance from peak/trough, and latest volume compared against the 20-day average volume.
+- **Master Key Insights Panel:** Summarizes trend position relative to 20-day and 50-day Simple Moving Averages (`SMA_20`, `SMA_50`), 20-day volume participation, and annualized volatility / drawdown context.
+- **Interactive Charts:** Plots closing price, 20D/50D SMAs, 20D Bollinger Bands ($\text{SMA}_{20} \pm 2\sigma_{20}$), and a daily volume bar chart with formatted volume tooltips (`K`, `M`, `B`).
 
-3. **Dynamic View Slicing**: Instantly updates the charts when you select different time views (like 1 Month, 6 Months, or 1 Year) without losing any mathematical accuracy.
+#### 3. Quantitative Risk & Return Diagnostics (*Quantitative Risk & Volatility*):
+- **Risk & Return Metrics:** Computes annualized volatility ($\text{Daily Return Std} \times \sqrt{252} \times 100$), cumulative period return, return variance against an annualized target benchmark, and daily mean return.
+- **Distribution & Regime Charts:** Tracks 30-day rolling annualized volatility over time alongside a 50-bin histogram of daily percentage returns.
 
-4. **Multi-Module Layout**: Displays clean, professional dashboards categorized so anyone can scan insights in seconds.
+#### 4. Normalized Multi-Asset Comparison (*Multi-Asset Performance & Spread*):
+- Aligns selected tickers (`2` to `6` assets) on shared dates and rebases prices to a common baseline (`Base = 100` using `(price / first_price) * 100`) so assets at different price levels can be compared directly.
 
-### 📊 Analytical Visualization Framework
+### 🏗️ Architecture, Caching & Reliability:
 
-The dashboard features clear, interactive charts designed to help you analyze market behavior at a glance:
+1. **Ingestion & 15-Minute Caching:** Uses `@st.cache_data(ttl=900)` on data-fetching functions to reduce repeated API calls and keep tab switching responsive.
+2. **Vectorized Transformations:** Uses Pandas rolling/percentage-change operations and NumPy math rather than row-by-row Python loops.
+3. **Defensive Fallbacks:** Validates JSON/quote payloads, drops missing `Close` rows, handles empty DataFrames gracefully, and displays clear status/warning messages when data is unavailable.
 
-- **Price Action & Technicals:** Displays price trends alongside helpful guidelines (like moving averages and volatility boundaries) to spot general market direction and key turning points.
+### 💡 Technology Stack:
+- **UI & App Framework:** Streamlit
+- **Market Data Ingestion:** Yahoo Finance Chart REST API (`requests`)
+- **Data Manipulation:** Pandas
+- **Numerical Computing:** NumPy
+- **Data Visualization:** Plotly (`plotly.express` and `plotly.graph_objects`)
 
-- **Quantitative Risk & Volatility:** Tracks continuous market risk over time so you can see when an asset is stabilizing or experiencing high turbulence.
-
-- **Multi-Asset Performance & Spread:** Puts multiple stocks or market indexes side-by-side on a unified percentage scale to see which ones are outperforming.
-
-### 💡 Technology Stack
-
-- **Dashboard Application Interface:** Streamlit (Python Web Framework)
-
-- **Data Sourcing Engine:** Yahoo Finance REST API (`yfinance`)
-
-- **Numerical Calculations:** NumPy (Matrix & Mathematical Operations)
-
-- **Data Processing:** Pandas (Structured Data Tables & Transformation)
-
-- **Visualizations:** Plotly (Interactive Charts & Graphs)
-
-### 🛠️ Installation & Local Setup
+### 🛠️ Installation & Local Setup:
 
 Want to run this terminal locally on your machine? Follow these simple steps:
 
