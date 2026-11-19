@@ -147,44 +147,50 @@ st.sidebar.success(f"🔵 Active Asset: **{active_ticker}**")
 @st.cache_data(ttl=900, show_spinner=False)
 def fetch_raw_stock_data(ticker_symbol, period_str="2y"):
     ticker_symbol = ticker_symbol.strip().upper()
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker_symbol}?interval=1d&range={period_str}"
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
             " like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
     }
-    try:
-        response = requests.get(url, headers=headers, timeout=8)
-        if response.status_code != 200:
-            return pd.DataFrame()
+    endpoints = [
+        f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker_symbol}?interval=1d&range={period_str}",
+        f"https://query2.finance.yahoo.com/v8/finance/chart/{ticker_symbol}?interval=1d&range={period_str}",
+    ]
+    for url in endpoints:
+        try:
+            response = requests.get(url, headers=headers, timeout=8)
+            if response.status_code != 200:
+                continue
 
-        data = response.json()
-        if not data.get("chart", {}).get("result"):
-            return pd.DataFrame()
+            data = response.json()
+            if not data.get("chart", {}).get("result"):
+                continue
 
-        result = data["chart"]["result"][0]
-        if "timestamp" not in result or not result.get("indicators", {}).get("quote"):
-            return pd.DataFrame()
+            result = data["chart"]["result"][0]
+            if "timestamp" not in result or not result.get("indicators", {}).get("quote"):
+                continue
 
-        timestamps = result["timestamp"]
-        quote = result["indicators"]["quote"][0]
+            timestamps = result["timestamp"]
+            quote = result["indicators"]["quote"][0]
 
-        df = pd.DataFrame(
-            {
-                "Open": quote.get("open", []),
-                "High": quote.get("high", []),
-                "Low": quote.get("low", []),
-                "Close": quote.get("close", []),
-                "Volume": quote.get("volume", []),
-            },
-            index=pd.to_datetime(timestamps, unit="s"),
-        )
+            df = pd.DataFrame(
+                {
+                    "Open": quote.get("open", []),
+                    "High": quote.get("high", []),
+                    "Low": quote.get("low", []),
+                    "Close": quote.get("close", []),
+                    "Volume": quote.get("volume", []),
+                },
+                index=pd.to_datetime(timestamps, unit="s"),
+            )
 
-        df = df.dropna(subset=["Close"])
-        return df
-    except Exception:
-        return pd.DataFrame()
+            df = df.dropna(subset=["Close"])
+            if not df.empty:
+                return df
+        except Exception:
+            continue
+    return pd.DataFrame()
 
 
 def fetch_live_stock_data(ticker_symbol, period_str="1y"):
