@@ -425,9 +425,9 @@ if nav_choice == "📈 Price Action & Technicals":
                 </div>
                 <div style="font-size: 0.9rem; color: #f8fafc; line-height: 1.6;">
                     <ul style="margin: 0; padding-left: 18px;">
-                        <li><b>Trend Structure:</b> {trend_summary}</li>
-                        <li><b>Volume & Participation:</b> {volume_summary}</li>
-                        <li><b>Risk Profile:</b> {risk_summary}</li>
+                        <li><b style="color: #7dd3fc;">Trend Structure:</b> {trend_summary}</li>
+                        <li><b style="color: #7dd3fc;">Volume & Participation:</b> {volume_summary}</li>
+                        <li><b style="color: #7dd3fc;">Risk Profile:</b> {risk_summary}</li>
                     </ul>
                 </div>
             </div>
