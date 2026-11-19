@@ -46,7 +46,7 @@ st.markdown(
         letter-spacing: 0.5px;
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-        color: #38bdf8 !important;
+        color: #ffffff !important;
         font-weight: 700;
         font-size: 1.25rem;
     }
