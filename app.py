@@ -39,7 +39,7 @@ st.markdown(
         box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
     }
     div[data-testid="stMetric"] label {
-        color: #7dd3fc !important;
+        color: #22d3ee !important;
         font-weight: 600;
         font-size: 0.75rem;
         text-transform: uppercase;
@@ -50,16 +50,19 @@ st.markdown(
         font-weight: 700;
         font-size: 1.25rem;
     }
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
+    div[data-testid="stMultiSelect"] [data-baseweb="tag"] {
         background-color: rgba(34, 211, 238, 0.16) !important;
         border: 1px solid #22d3ee !important;
         box-shadow: 0 0 10px rgba(34, 211, 238, 0.3) !important;
     }
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] span {
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] span,
+    div[data-testid="stMultiSelect"] [data-baseweb="tag"] span {
         color: #67e8f9 !important;
         font-weight: 600 !important;
     }
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] svg {
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] svg,
+    div[data-testid="stMultiSelect"] [data-baseweb="tag"] svg {
         fill: #67e8f9 !important;
         color: #67e8f9 !important;
     }
@@ -268,7 +271,7 @@ if nav_choice == "📈 Price Action & Technicals":
         f"""
         <div class="terminal-header">
             <h2 style="margin:0; color:#f8fafc; font-size: 1.5rem;">📈 MARKET INTELLIGENCE: {active_ticker}</h2>
-            <div style="font-size: 0.85rem; color: #38bdf8; font-weight: 600;">
+            <div style="font-size: 0.85rem; color: #22d3ee; font-weight: 600;">
                 WINDOW: {timeframe.upper()} &nbsp;|&nbsp; THEME: CRYSTAL BLUE
             </div>
         </div>
@@ -426,14 +429,14 @@ if nav_choice == "📈 Price Action & Technicals":
         st.markdown(
             f"""
             <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-left: 4px solid #38bdf8; border: 1px solid #334151; padding: 18px 22px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                <div style="font-size: 0.75rem; color: #7dd3fc; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px;">
+                <div style="font-size: 0.75rem; color: #22d3ee; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px;">
                     ⚡ Master Key Insights & Executive Synthesis ({active_ticker})
                 </div>
                 <div style="font-size: 0.9rem; color: #f8fafc; line-height: 1.6;">
                     <ul style="margin: 0; padding-left: 18px;">
-                        <li><b style="color: #7dd3fc;">Trend Structure:</b> {trend_summary}</li>
-                        <li><b style="color: #7dd3fc;">Volume & Participation:</b> {volume_summary}</li>
-                        <li><b style="color: #7dd3fc;">Risk Profile:</b> {risk_summary}</li>
+                        <li><b style="color: #22d3ee;">Trend Structure:</b> {trend_summary}</li>
+                        <li><b style="color: #22d3ee;">Volume & Participation:</b> {volume_summary}</li>
+                        <li><b style="color: #22d3ee;">Risk Profile:</b> {risk_summary}</li>
                     </ul>
                 </div>
             </div>
@@ -728,8 +731,8 @@ elif nav_choice == "📖 Analytics Guide & Overview":
     st.markdown(
         """
     <div class="analytics-card">
-        <b style="color: #7dd3fc;">For Non-Technical Stakeholders:</b> AlphaQuant eliminates the need for complex, expensive financial software by instantly translating dense stock market history into clear, interactive visual dashboards.<br>
-        <b style="color: #7dd3fc;">For Technical & Analytical Teams:</b> It serves as a robust institutional-grade BI pipeline built on optimized Python pandas structures, vectorised financial indicators, and resilient REST API ingestion layers.
+        <b style="color: #22d3ee;">For Non-Technical Stakeholders:</b> AlphaQuant eliminates the need for complex, expensive financial software by instantly translating dense stock market history into clear, interactive visual dashboards.<br>
+        <b style="color: #22d3ee;">For Technical & Analytical Teams:</b> It serves as a robust institutional-grade BI pipeline built on optimized Python pandas structures, vectorised financial indicators, and resilient REST API ingestion layers.
     </div>
 """,
         unsafe_allow_html=True,
@@ -740,12 +743,12 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         """
     <div class="analytics-card">
         <ul>
-            <li><b style="color: #7dd3fc;">Live Close Price:</b> The most recent closing trading price in USD, accompanied by a 24-hour percentage change comparing today's close against the previous trading session's close.</li>
-            <li><b style="color: #7dd3fc;">Period High / Low:</b> The absolute highest and lowest prices reached during your selected timeframe window (e.g., 6mo, 1y), showing exact percentage distance from current price to help identify market peaks or troughs.</li>
-            <li><b style="color: #7dd3fc;">Latest Volume:</b> The total number of shares traded in the most recent session, accompanied by a performance delta measuring volume against the 20-day moving average volume to highlight institutional interest or unusual activity.</li>
-            <li><b style="color: #7dd3fc;">Annualized Volatility (Risk):</b> Measures the annualized standard deviation of daily returns, quantifying the total risk profile of the asset over the analysis window.</li>
-            <li><b style="color: #7dd3fc;">Cumulative Period Return:</b> Calculates the total percentage growth from the start of the timeframe to the latest close, paired with a comparative performance delta against an annualized benchmark target.</li>
-            <li><b style="color: #7dd3fc;">Daily Mean Return:</b> Displays the mathematical average of daily percentage returns across the active window to evaluate central tendency performance.</li>
+            <li><b style="color: #22d3ee;">Live Close Price:</b> The most recent closing trading price in USD, accompanied by a 24-hour percentage change comparing today's close against the previous trading session's close.</li>
+            <li><b style="color: #22d3ee;">Period High / Low:</b> The absolute highest and lowest prices reached during your selected timeframe window (e.g., 6mo, 1y), showing exact percentage distance from current price to help identify market peaks or troughs.</li>
+            <li><b style="color: #22d3ee;">Latest Volume:</b> The total number of shares traded in the most recent session, accompanied by a performance delta measuring volume against the 20-day moving average volume to highlight institutional interest or unusual activity.</li>
+            <li><b style="color: #22d3ee;">Annualized Volatility (Risk):</b> Measures the annualized standard deviation of daily returns, quantifying the total risk profile of the asset over the analysis window.</li>
+            <li><b style="color: #22d3ee;">Cumulative Period Return:</b> Calculates the total percentage growth from the start of the timeframe to the latest close, paired with a comparative performance delta against an annualized benchmark target.</li>
+            <li><b style="color: #22d3ee;">Daily Mean Return:</b> Displays the mathematical average of daily percentage returns across the active window to evaluate central tendency performance.</li>
         </ul>
     </div>
 """,
@@ -757,12 +760,12 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         """
     <div class="analytics-card">
         <ul>
-            <li><b style="color: #7dd3fc;">Price Action & Moving Averages (SMA 20 & SMA 50):</b> Smooths out daily price fluctuations to identify short-term (20-day) and medium-term (50-day) trend directions.</li>
-            <li><b style="color: #7dd3fc;">Bollinger Bands (Volatility Channels):</b> Dynamic upper and lower boundaries set two standard deviations away from the 20-day average. Tight contractions signal impending breakouts; touches outside the bands signal overbought/oversold conditions.</li>
-            <li><b style="color: #7dd3fc;">Daily Trading Volume Bar Chart:</b> Displays institutional liquidity over the active sessions. Spikes confirm the conviction behind price breakouts or sell-offs.</li>
-            <li><b style="color: #7dd3fc;">30-Day Rolling Annualized Volatility Trend:</b> Tracks how asset risk shifts dynamically over time in response to earnings reports, news cycles, or macroeconomic events.</li>
-            <li><b style="color: #7dd3fc;">Daily Return Distribution Frequency:</b> A statistical histogram mapping out the frequency of daily gains and losses to evaluate skewness and tail risk.</li>
-            <li><b style="color: #7dd3fc;">Multi-Asset Comparative Spread:</b> Rescales multiple tickers to a common baseline index of 100 on day one, allowing clear peer and benchmark comparisons regardless of stock price differences.</li>
+            <li><b style="color: #22d3ee;">Price Action & Moving Averages (SMA 20 & SMA 50):</b> Smooths out daily price fluctuations to identify short-term (20-day) and medium-term (50-day) trend directions.</li>
+            <li><b style="color: #22d3ee;">Bollinger Bands (Volatility Channels):</b> Dynamic upper and lower boundaries set two standard deviations away from the 20-day average. Tight contractions signal impending breakouts; touches outside the bands signal overbought/oversold conditions.</li>
+            <li><b style="color: #22d3ee;">Daily Trading Volume Bar Chart:</b> Displays institutional liquidity over the active sessions. Spikes confirm the conviction behind price breakouts or sell-offs.</li>
+            <li><b style="color: #22d3ee;">30-Day Rolling Annualized Volatility Trend:</b> Tracks how asset risk shifts dynamically over time in response to earnings reports, news cycles, or macroeconomic events.</li>
+            <li><b style="color: #22d3ee;">Daily Return Distribution Frequency:</b> A statistical histogram mapping out the frequency of daily gains and losses to evaluate skewness and tail risk.</li>
+            <li><b style="color: #22d3ee;">Multi-Asset Comparative Spread:</b> Rescales multiple tickers to a common baseline index of 100 on day one, allowing clear peer and benchmark comparisons regardless of stock price differences.</li>
         </ul>
     </div>
 """,
@@ -774,9 +777,9 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         """
     <div class="analytics-card">
         <ul>
-            <li><b style="color: #7dd3fc;">Rapid Daily Market Briefings:</b> Equity analysts can select focus assets (e.g., AAPL or NVDA) to instantly review 24h performance, current period drawdowns from peak, and volume surges without waiting for manual batch processing.</li>
-            <li><b style="color: #7dd3fc;">Relative Performance Benchmarking:</b> Portfolio managers can switch to the Multi-Asset view to immediately compare growth trajectories across tech equities (AAPL, MSFT) against broad market benchmarks (SPY, QQQ) on a normalized baseline scale.</li>
-            <li><b style="color: #7dd3fc;">Regime & Volatility Tracking:</b> Risk management teams can evaluate the 30-day rolling volatility trend line to spot expanding risk environments before earnings announcements or policy rate decisions.</li>
+            <li><b style="color: #22d3ee;">Rapid Daily Market Briefings:</b> Equity analysts can select focus assets (e.g., AAPL or NVDA) to instantly review 24h performance, current period drawdowns from peak, and volume surges without waiting for manual batch processing.</li>
+            <li><b style="color: #22d3ee;">Relative Performance Benchmarking:</b> Portfolio managers can switch to the Multi-Asset view to immediately compare growth trajectories across tech equities (AAPL, MSFT) against broad market benchmarks (SPY, QQQ) on a normalized baseline scale.</li>
+            <li><b style="color: #22d3ee;">Regime & Volatility Tracking:</b> Risk management teams can evaluate the 30-day rolling volatility trend line to spot expanding risk environments before earnings announcements or policy rate decisions.</li>
         </ul>
     </div>
 """,
@@ -788,10 +791,10 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         """
     <div class="analytics-card">
         <ul>
-            <li><b style="color: #7dd3fc;">Data Sourcing & Reliability:</b> Market data is ingested directly via secure endpoints from Yahoo Finance with automated validation checks on timestamps and quote payloads.</li>
-            <li><b style="color: #7dd3fc;">Caching & Performance Optimization:</b> Implements a 15-minute TTL cache (<code>@st.cache_data(ttl=900)</code>) to ensure sub-second response times while avoiding API rate limits and redundant network calls.</li>
-            <li><b style="color: #7dd3fc;">Resilient Error Handling:</b> Employs strict try-except wrappers, empty dataframe checks, and null-dropping routines to prevent application crashes when handling illiquid or delisted assets.</li>
-            <li><b style="color: #7dd3fc;">Transparency & Auditability:</b> All metrics and transformations use standard open-source financial formulas (standard deviation, percentage changes, rolling means) ensuring complete reproducibility for audits.</li>
+            <li><b style="color: #22d3ee;">Data Sourcing & Reliability:</b> Market data is ingested directly via secure endpoints from Yahoo Finance with automated validation checks on timestamps and quote payloads.</li>
+            <li><b style="color: #22d3ee;">Caching & Performance Optimization:</b> Implements a 15-minute TTL cache (<code>@st.cache_data(ttl=900)</code>) to ensure sub-second response times while avoiding API rate limits and redundant network calls.</li>
+            <li><b style="color: #22d3ee;">Resilient Error Handling:</b> Employs strict try-except wrappers, empty dataframe checks, and null-dropping routines to prevent application crashes when handling illiquid or delisted assets.</li>
+            <li><b style="color: #22d3ee;">Transparency & Auditability:</b> All metrics and transformations use standard open-source financial formulas (standard deviation, percentage changes, rolling means) ensuring complete reproducibility for audits.</li>
         </ul>
     </div>
 """,
