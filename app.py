@@ -562,7 +562,7 @@ if nav_choice == "📈 Price Action & Technicals":
 
     else:
         st.error(
-            f"⚠️ Unable to retrieve data for '{active_ticker}'. Please verify the symbol format."
+            f"⚠️ Unable to retrieve data for '{active_ticker}'. Please verify the symbol format or try again shortly."
         )
 
 elif nav_choice == "📊 Quantitative Risk & Volatility":
@@ -639,10 +639,11 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
         returns_clean = (stock_df["Daily_Return"].dropna() * 100).reset_index()
         returns_clean.columns = ["Date", "Return"]
 
+        hist_bins = 15 if timeframe == "1mo" else (25 if timeframe == "3mo" else 50)
         fig_hist = px.histogram(
             returns_clean,
             x="Return",
-            nbins=50,
+            nbins=hist_bins,
         )
         fig_hist.update_layout(
             paper_bgcolor="#0f172a",
@@ -660,6 +661,8 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
         )
         fig_hist.update_traces(
             marker_color="#38bdf8",
+            marker_line_color="#0f172a",
+            marker_line_width=1,
             hovertemplate=(
                 "<b>Return Range</b>: %{x}<br><b>Number of Trading Days</b>:"
                 " %{y}<extra></extra>"
