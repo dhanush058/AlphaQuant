@@ -51,20 +51,19 @@ st.markdown(
         font-size: 1.25rem;
     }
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
-    div[data-testid="stMultiSelect"] [data-baseweb="tag"] {
+    div[data-testid="stMultiSelect"] [data-baseweb="tag"],
+    [data-testid="stMultiSelect"] [data-baseweb="tag"] {
+        background: rgba(34, 211, 238, 0.16) !important;
         background-color: rgba(34, 211, 238, 0.16) !important;
         border: 1px solid #22d3ee !important;
         box-shadow: 0 0 10px rgba(34, 211, 238, 0.3) !important;
     }
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] span,
-    div[data-testid="stMultiSelect"] [data-baseweb="tag"] span {
-        color: #67e8f9 !important;
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] *,
+    div[data-testid="stMultiSelect"] [data-baseweb="tag"] *,
+    [data-testid="stMultiSelect"] [data-baseweb="tag"] * {
+        color: #22d3ee !important;
+        fill: #22d3ee !important;
         font-weight: 600 !important;
-    }
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] svg,
-    div[data-testid="stMultiSelect"] [data-baseweb="tag"] svg {
-        fill: #67e8f9 !important;
-        color: #67e8f9 !important;
     }
     h1, h2, h3 {
         color: #f8fafc;
