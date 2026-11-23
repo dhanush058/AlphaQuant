@@ -785,15 +785,15 @@ elif nav_choice == "🔗 Multi-Asset Performance & Spread":
 elif nav_choice == "📖 Analytics Guide & Overview":
     st.subheader("📖 Analytics Guide & Operational Governance")
     st.markdown(
-        "A comprehensive executive guide designed for both technical and non-technical stakeholders, detailing KPI cards, chart mechanics, real-world utility, and data governance standards."
+        "A clear, plain-language guide for anyone reading the dashboard—explaining what each number and chart means in everyday terms, how to use it in practice, and how the data is handled."
     )
 
     st.markdown("### 🏢 Executive Summary & Business Value")
     st.markdown(
         """
     <div class="analytics-card">
-        <b style="color: #22d3ee;">For Non-Technical Stakeholders:</b> AlphaQuant eliminates the need for complex, expensive financial software by instantly translating dense stock market history into clear, interactive visual dashboards.<br>
-        <b style="color: #22d3ee;">For Technical & Analytical Teams:</b> It serves as a robust institutional-grade BI pipeline built on optimized Python pandas structures, vectorised financial indicators, and resilient REST API ingestion layers.
+        <b style="color: #22d3ee;">For Everyday & Non-Technical Readers:</b> AlphaQuant turns raw historical price and trading data into clear charts and plain-English takeaways so you can quickly see how an asset is trending, how bumpy the ride has been, and how it compares to others—no finance background or complicated software required.<br>
+        <b style="color: #22d3ee;">For Analysts & Technical Teams:</b> It runs a repeatable Python and pandas pipeline that pulls daily market data, calculates standard price, risk, and comparison metrics automatically, and presents them in one clean workspace.
     </div>
 """,
         unsafe_allow_html=True,
@@ -804,14 +804,14 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         """
     <div class="analytics-card">
         <ul>
-            <li><b style="color: #22d3ee;">Live Close Price:</b> The most recent closing trading price in USD, accompanied by a 24-hour percentage change comparing today's close against the previous trading session's close.</li>
-            <li><b style="color: #22d3ee;">Period High / Low:</b> The absolute highest and lowest prices reached during your selected timeframe window (e.g., 6mo, 1y), showing exact percentage distance from current price to help identify market peaks or troughs.</li>
-            <li><b style="color: #22d3ee;">Latest Volume:</b> The total number of shares traded in the most recent session, accompanied by a performance delta measuring volume against the 20-day moving average volume to highlight institutional interest or unusual activity.</li>
-            <li><b style="color: #22d3ee;">Annualized Volatility (Risk):</b> Measures the annualized standard deviation of daily returns, quantifying the total risk profile of the asset over the analysis window.</li>
-            <li><b style="color: #22d3ee;">Cumulative Period Return:</b> Calculates the total percentage growth from the start of the timeframe to the latest close, paired with a comparative performance delta against an annualized benchmark target.</li>
-            <li><b style="color: #22d3ee;">Daily Mean Return:</b> Displays the mathematical average of daily percentage returns across the active window to evaluate central tendency performance.</li>
-            <li><b style="color: #22d3ee;">Sharpe Ratio (Rf = 0%):</b> Measures annualized return per unit of annualized volatility (assuming a 0% risk-free rate) to gauge risk-adjusted efficiency.</li>
-            <li><b style="color: #22d3ee;">Maximum Drawdown:</b> Captures the largest peak-to-trough percentage decline over the selected historical window to show worst-case historical loss depth.</li>
+            <li><b style="color: #22d3ee;">Live Close Price:</b> The latest closing price in USD, plus how much it moved up or down compared to the prior trading day's close.</li>
+            <li><b style="color: #22d3ee;">Period High / Low:</b> The highest and lowest prices reached during your chosen timeframe (such as 6mo or 1y), and how far today's price is from that peak or bottom.</li>
+            <li><b style="color: #22d3ee;">Latest Volume:</b> How many shares or units traded in the most recent session, compared against the 20-day average so you can spot unusually quiet or busy trading days.</li>
+            <li><b style="color: #22d3ee;">Annualized Volatility (Risk):</b> How much the asset's daily returns bounce around, scaled to a full year—higher numbers mean bigger, choppier price swings.</li>
+            <li><b style="color: #22d3ee;">Cumulative Period Return:</b> Total percentage gain or loss from the start of your selected timeframe to the latest close, alongside how it compares to a simple pro-rated 8% yearly benchmark pace.</li>
+            <li><b style="color: #22d3ee;">Daily Mean Return:</b> The average daily percentage return across the selected period—a quick snapshot of typical day-to-day direction.</li>
+            <li><b style="color: #22d3ee;">Sharpe Ratio (Rf = 0%):</b> How much annualized return you get for each unit of volatility (assuming a 0% risk-free rate)—higher means a smoother return per unit of risk taken.</li>
+            <li><b style="color: #22d3ee;">Maximum Drawdown:</b> The biggest drop from a high point to a later low point during the selected timeframe—showing the worst slide you would have experienced if you bought right at the top.</li>
         </ul>
     </div>
 """,
@@ -823,13 +823,13 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         """
     <div class="analytics-card">
         <ul>
-            <li><b style="color: #22d3ee;">Price Action & Moving Averages (SMA 20 & SMA 50):</b> Smooths out daily price fluctuations to identify short-term (20-day) and medium-term (50-day) trend directions.</li>
-            <li><b style="color: #22d3ee;">Bollinger Bands (Volatility Channels):</b> Dynamic upper and lower boundaries set two standard deviations away from the 20-day average. Tight contractions signal impending breakouts; touches outside the bands signal overbought/oversold conditions.</li>
-            <li><b style="color: #22d3ee;">Daily Trading Volume Bar Chart:</b> Displays institutional liquidity over the active sessions. Spikes confirm the conviction behind price breakouts or sell-offs.</li>
-            <li><b style="color: #22d3ee;">30-Day Rolling Annualized Volatility Trend:</b> Tracks how asset risk shifts dynamically over time in response to earnings reports, news cycles, or macroeconomic events.</li>
-            <li><b style="color: #22d3ee;">Daily Return Distribution Frequency:</b> A statistical histogram mapping out the frequency of daily gains and losses to evaluate skewness and tail risk.</li>
-            <li><b style="color: #22d3ee;">Multi-Asset Comparative Spread:</b> Rescales multiple tickers to a common baseline index of 100 on day one, allowing clear peer and benchmark comparisons regardless of stock price differences.</li>
-            <li><b style="color: #22d3ee;">Pairwise Return Correlation Matrix:</b> Displays correlation coefficients (-1.00 to +1.00) across daily returns of selected basket assets to assess diversification and co-movement.</li>
+            <li><b style="color: #22d3ee;">Price Action & Moving Averages (SMA 20 & SMA 50):</b> Plots the closing price alongside 20-day (short-term) and 50-day (medium-term) average lines to smooth out daily noise and show the overall direction.</li>
+            <li><b style="color: #22d3ee;">Bollinger Bands (Volatility Channels):</b> A shaded band two standard deviations above and below the 20-day average that widens when price swings pick up and narrows when price gets quiet.</li>
+            <li><b style="color: #22d3ee;">Daily Trading Volume Bar Chart:</b> Shows daily trading activity—big bars alongside price moves often signal stronger conviction behind a rally or pullback.</li>
+            <li><b style="color: #22d3ee;">30-Day Rolling Annualized Volatility Trend:</b> Tracks how bumpy the asset's swings have been over a rolling 30-day window so you can see calm vs. turbulent stretches over time.</li>
+            <li><b style="color: #22d3ee;">Daily Return Distribution Frequency:</b> Groups daily percentage gains and losses into bars to show how common small days are versus rare big jumps or drops.</li>
+            <li><b style="color: #22d3ee;">Multi-Asset Comparative Spread:</b> Starts every selected asset at 100 on day one so you can fairly compare percentage growth across expensive and low-priced assets side by side.</li>
+            <li><b style="color: #22d3ee;">Pairwise Return Correlation Matrix:</b> Shows a score from -1.00 to +1.00 for each pair of selected assets—values near +1.00 mean they tend to move up or down together, while lower values mean they move more independently.</li>
         </ul>
     </div>
 """,
@@ -841,9 +841,9 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         """
     <div class="analytics-card">
         <ul>
-            <li><b style="color: #22d3ee;">Rapid Daily Market Briefings:</b> Equity analysts can select focus assets (e.g., AAPL or NVDA) to instantly review 24h performance, current period drawdowns from peak, and volume surges without waiting for manual batch processing.</li>
-            <li><b style="color: #22d3ee;">Relative Performance Benchmarking:</b> Portfolio managers can switch to the Multi-Asset view to immediately compare growth trajectories across tech equities (AAPL, MSFT) against broad market benchmarks (SPY, QQQ) on a normalized baseline scale.</li>
-            <li><b style="color: #22d3ee;">Regime & Volatility Tracking:</b> Risk management teams can evaluate the 30-day rolling volatility trend line to spot expanding risk environments before earnings announcements or policy rate decisions.</li>
+            <li><b style="color: #22d3ee;">Rapid Daily Market Briefings:</b> Pick a focus asset (like AAPL or NVDA) and timeframe to quickly check recent price direction, distance from period highs/lows, and whether volume is unusually high or low.</li>
+            <li><b style="color: #22d3ee;">Relative Performance Benchmarking:</b> Open the Multi-Asset view to see which stocks or ETFs led or lagged on a common 100-point start line and check whether they move in lockstep.</li>
+            <li><b style="color: #22d3ee;">Regime & Volatility Tracking:</b> Watch the 30-day rolling volatility line and maximum drawdown to see when price swings or pullbacks are intensifying versus calming down.</li>
         </ul>
     </div>
 """,
@@ -855,10 +855,10 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         """
     <div class="analytics-card">
         <ul>
-            <li><b style="color: #22d3ee;">Data Sourcing & Reliability:</b> Market data is ingested directly via secure endpoints from Yahoo Finance with automated validation checks on timestamps and quote payloads.</li>
-            <li><b style="color: #22d3ee;">Caching & Performance Optimization:</b> Implements a 15-minute TTL cache (<code>@st.cache_data(ttl=900)</code>) to ensure sub-second response times while avoiding API rate limits and redundant network calls.</li>
-            <li><b style="color: #22d3ee;">Resilient Error Handling:</b> Employs strict try-except wrappers, empty dataframe checks, and null-dropping routines to prevent application crashes when handling illiquid or delisted assets.</li>
-            <li><b style="color: #22d3ee;">Transparency & Auditability:</b> All metrics and transformations use standard open-source financial formulas (standard deviation, percentage changes, rolling means) ensuring complete reproducibility for audits.</li>
+            <li><b style="color: #22d3ee;">Data Sourcing & Reliability:</b> Pulls daily market history from Yahoo Finance endpoints (with fallback URLs) and checks that timestamps, prices, and rows are valid before plotting.</li>
+            <li><b style="color: #22d3ee;">Caching & Performance Optimization:</b> Saves fetched data for 15 minutes (<code>@st.cache_data(ttl=900)</code>) so switching views or tickers feels snappy and avoids repeated network calls.</li>
+            <li><b style="color: #22d3ee;">Resilient Error Handling:</b> Uses safe try-except blocks, empty-data checks, and missing-value cleanup so missing or tricky symbols fail gracefully instead of crashing the app.</li>
+            <li><b style="color: #22d3ee;">Transparency & Auditability:</b> Computes every metric using standard, straightforward math (percentage changes, averages, standard deviation, rolling highs) so anyone can verify how a number was produced.</li>
         </ul>
     </div>
 """,
