@@ -842,14 +842,14 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         unsafe_allow_html=True,
     )
 
-    st.markdown("### 🚀 Real-World Applications")
+    st.markdown("### 🌍 Real-World Applications")
     st.markdown(
         """
     <div class="analytics-card">
         <ul>
-            <li><b style="color: #22d3ee;">Trend & Entry/Exit Context Screening:</b> Check whether an equity, index ETF, or crypto pair is trading above or below its 20-day and 50-day moving averages and where it sits inside its Bollinger Band channel and period high-low range before researching further.</li>
-            <li><b style="color: #22d3ee;">Volatility & Downside Risk Sizing:</b> Compare annualized volatility, 30-day rolling volatility trends, return histograms, and maximum drawdown across windows (<code>1mo</code> to <code>2y</code>) to gauge how much turbulence a position can bring.</li>
-            <li><b style="color: #22d3ee;">Relative Strength & Diversification Checks:</b> Put 2 to 6 assets on a common <code>Base = 100</code> chart and inspect pairwise correlations to see which tickers led or lagged and how closely they move together, then export the underlying series to CSV for deeper modeling.</li>
+            <li><b style="color: #22d3ee;">Morning Market Briefings & Watchlist Triage:</b> Analysts, founders, and team leads can check a ticker's trend summary, volume activity, and distance from period highs or lows in seconds to prepare daily briefings or decide which names deserve deeper coverage.</li>
+            <li><b style="color: #22d3ee;">Risk Reviews & Stakeholder Reporting:</b> Teams evaluating capital allocation, treasury exposure, or client research can pull consistent volatility, drawdown, and return distribution metrics across windows and download the underlying CSV for internal decks or audits.</li>
+            <li><b style="color: #22d3ee;">Cross-Asset Benchmarking & Product/Sector Tracking:</b> Business and market researchers can compare stocks, ETFs, and crypto assets on a unified baseline and check correlation heatmaps to see whether holdings or competitors are moving together or driving independent outcomes.</li>
         </ul>
     </div>
 """,
