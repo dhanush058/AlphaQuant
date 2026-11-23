@@ -560,6 +560,14 @@ if nav_choice == "📈 Price Action & Technicals":
         )
         st.plotly_chart(fig_vol, use_container_width=True)
 
+        csv_price = stock_df.to_csv(index_label="Date").encode("utf-8")
+        st.download_button(
+            label=f"⬇️ Download {active_ticker} ({timeframe.upper()}) Analytics CSV",
+            data=csv_price,
+            file_name=f"{active_ticker}_{timeframe}_alphaquant.csv",
+            mime="text/csv",
+        )
+
     else:
         st.error(
             f"⚠️ Unable to retrieve data for '{active_ticker}'. Please verify the symbol format or try again shortly."
@@ -584,6 +592,16 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
         expected_period_return = 8.0 * (len(stock_df) / 252.0)
         return_delta = cumulative_return - expected_period_return
 
+        daily_std = stock_df["Daily_Return"].std()
+        sharpe_ratio = (
+            (stock_df["Daily_Return"].mean() / daily_std) * np.sqrt(252)
+            if pd.notna(daily_std) and daily_std > 0
+            else 0.0
+        )
+        rolling_peak = stock_df["Close"].cummax()
+        drawdown_pct = ((stock_df["Close"] - rolling_peak) / rolling_peak) * 100
+        max_drawdown_pct = float(drawdown_pct.min())
+
         q1, q2, q3 = st.columns(3)
         q1.metric(
             "Annualized Volatility (Risk)",
@@ -600,6 +618,20 @@ elif nav_choice == "📊 Quantitative Risk & Volatility":
             "Daily Mean Return",
             f"{mean_return_val:+.3f}%",
             None,
+        )
+
+        r1, r2 = st.columns(2)
+        r1.metric(
+            "Sharpe Ratio (Rf = 0%)",
+            f"{sharpe_ratio:.2f}",
+            None,
+            help="Annualized Return-to-Volatility Ratio (0% risk-free rate)",
+        )
+        r2.metric(
+            "Maximum Drawdown",
+            f"{max_drawdown_pct:.2f}%",
+            None,
+            help="Worst peak-to-trough decline over selected window",
         )
 
         st.markdown("---")
@@ -720,6 +752,33 @@ elif nav_choice == "🔗 Multi-Asset Performance & Spread":
                 )
             )
             st.plotly_chart(fig_multi, use_container_width=True)
+
+            st.markdown("---")
+            st.subheader("Pairwise Return Correlation Matrix")
+            returns_basket = multi_df.pct_change().dropna()
+            if not returns_basket.empty:
+                corr_matrix = returns_basket.corr()
+                fig_corr = px.imshow(
+                    corr_matrix,
+                    text_auto=".2f",
+                    zmin=-1,
+                    zmax=1,
+                    color_continuous_scale=[
+                        [0.0, "#f87171"],
+                        [0.5, "#1e293b"],
+                        [1.0, "#22d3ee"],
+                    ],
+                )
+                fig_corr.update_layout(
+                    paper_bgcolor="#0f172a",
+                    plot_bgcolor="#1e293b",
+                    font=dict(color="#f8fafc"),
+                    height=400,
+                    margin=dict(l=20, r=20, t=30, b=20),
+                    xaxis=dict(title=""),
+                    yaxis=dict(title=""),
+                )
+                st.plotly_chart(fig_corr, use_container_width=True)
         else:
             st.warning("Multi-asset comparison stream currently unavailable.")
 
@@ -751,6 +810,8 @@ elif nav_choice == "📖 Analytics Guide & Overview":
             <li><b style="color: #22d3ee;">Annualized Volatility (Risk):</b> Measures the annualized standard deviation of daily returns, quantifying the total risk profile of the asset over the analysis window.</li>
             <li><b style="color: #22d3ee;">Cumulative Period Return:</b> Calculates the total percentage growth from the start of the timeframe to the latest close, paired with a comparative performance delta against an annualized benchmark target.</li>
             <li><b style="color: #22d3ee;">Daily Mean Return:</b> Displays the mathematical average of daily percentage returns across the active window to evaluate central tendency performance.</li>
+            <li><b style="color: #22d3ee;">Sharpe Ratio (Rf = 0%):</b> Measures annualized return per unit of annualized volatility (assuming a 0% risk-free rate) to gauge risk-adjusted efficiency.</li>
+            <li><b style="color: #22d3ee;">Maximum Drawdown:</b> Captures the largest peak-to-trough percentage decline over the selected historical window to show worst-case historical loss depth.</li>
         </ul>
     </div>
 """,
@@ -768,6 +829,7 @@ elif nav_choice == "📖 Analytics Guide & Overview":
             <li><b style="color: #22d3ee;">30-Day Rolling Annualized Volatility Trend:</b> Tracks how asset risk shifts dynamically over time in response to earnings reports, news cycles, or macroeconomic events.</li>
             <li><b style="color: #22d3ee;">Daily Return Distribution Frequency:</b> A statistical histogram mapping out the frequency of daily gains and losses to evaluate skewness and tail risk.</li>
             <li><b style="color: #22d3ee;">Multi-Asset Comparative Spread:</b> Rescales multiple tickers to a common baseline index of 100 on day one, allowing clear peer and benchmark comparisons regardless of stock price differences.</li>
+            <li><b style="color: #22d3ee;">Pairwise Return Correlation Matrix:</b> Displays correlation coefficients (-1.00 to +1.00) across daily returns of selected basket assets to assess diversification and co-movement.</li>
         </ul>
     </div>
 """,
