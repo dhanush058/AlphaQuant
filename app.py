@@ -817,7 +817,7 @@ elif nav_choice == "📖 Analytics Guide & Overview":
             <li><b style="color: #22d3ee;">Annualized Volatility (Risk):</b> How much the asset's daily returns bounce around, scaled to a full year—higher numbers mean bigger, choppier price swings.</li>
             <li><b style="color: #22d3ee;">Cumulative Period Return:</b> Total percentage gain or loss from the start of your selected timeframe to the latest close, alongside how it compares to an illustrative 8% annual benchmark scaled to your selected window.</li>
             <li><b style="color: #22d3ee;">Daily Mean Return:</b> The average percentage gain or loss per trading day across the selected window.</li>
-            <li><b style="color: #22d3ee;">Sharpe Ratio (Rf = 0%):</b> A return-per-unit-of-risk score (assuming a 0% risk-free rate) that helps show whether returns are coming with reasonable stability or heavy swings.</li>
+            <li><b style="color: #22d3ee;">Sharpe Ratio (Rf = 0%):</b> A simple "smoothness vs. return" score—higher numbers mean you got more reward for each bit of bumpiness along the way, while low or negative numbers mean a rough ride or losses for the risk taken.</li>
             <li><b style="color: #22d3ee;">Maximum Drawdown:</b> The steepest drop from a peak to a subsequent low during the chosen timeframe, showing the worst pullback an investor would have experienced over that period.</li>
         </ul>
     </div>
