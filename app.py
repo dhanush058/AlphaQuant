@@ -228,11 +228,6 @@ def fetch_live_stock_data(ticker_symbol, period_str="1y"):
 
 
 @st.cache_data(ttl=900, show_spinner=False)
-def build_csv_bytes(df):
-    return df.to_csv(index_label="Date").encode("utf-8")
-
-
-@st.cache_data(ttl=900, show_spinner=False)
 def fetch_multi_asset_data(tuple_tickers, period_str="1y"):
     closes = {}
     for t in tuple_tickers:
@@ -565,13 +560,12 @@ if nav_choice == "📈 Price Action & Technicals":
         )
         st.plotly_chart(fig_vol, use_container_width=True)
 
-        csv_price = build_csv_bytes(stock_df)
+        csv_price = stock_df.to_csv(index_label="Date").encode("utf-8")
         st.download_button(
             label=f"⬇️ Download {active_ticker} ({timeframe.upper()}) Analytics CSV",
             data=csv_price,
             file_name=f"{active_ticker}_{timeframe}_alphaquant.csv",
             mime="text/csv",
-            key=f"dl_{active_ticker}_{timeframe}",
         )
 
     else:
@@ -814,4 +808,59 @@ elif nav_choice == "📖 Analytics Guide & Overview":
             <li><b style="color: #22d3ee;">Period High / Low:</b> The highest and lowest prices reached during your chosen timeframe (such as 6mo or 1y), and how far today's price is from that peak or bottom.</li>
             <li><b style="color: #22d3ee;">Latest Volume:</b> How many shares or units traded in the most recent session, compared against the 20-day average so you can spot unusually quiet or busy trading days.</li>
             <li><b style="color: #22d3ee;">Annualized Volatility (Risk):</b> How much the asset's daily returns bounce around, scaled to a full year—higher numbers mean bigger, choppier price swings.</li>
-            <li><b style="color: #22d3ee;">Cumulative Period Return:</b> Total percentage gain or loss from the start of your selected timeframe to the latest close, alongsid
+            <li><b style="color: #22d3ee;">Cumulative Period Return:</b> Total percentage gain or loss from the start of your selected timeframe to the latest close, alongside how it compares to a simple pro-rated 8% yearly benchmark pace.</li>
+            <li><b style="color: #22d3ee;">Daily Mean Return:</b> The average daily percentage return across the selected period—a quick snapshot of typical day-to-day direction.</li>
+            <li><b style="color: #22d3ee;">Sharpe Ratio (Rf = 0%):</b> How much annualized return you get for each unit of volatility (assuming a 0% risk-free rate)—higher means a smoother return per unit of risk taken.</li>
+            <li><b style="color: #22d3ee;">Maximum Drawdown:</b> The biggest drop from a high point to a later low point during the selected timeframe—showing the worst slide you would have experienced if you bought right at the top.</li>
+        </ul>
+    </div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### 📈 Visual Plots & Technical Indicator Guide")
+    st.markdown(
+        """
+    <div class="analytics-card">
+        <ul>
+            <li><b style="color: #22d3ee;">Price Action & Moving Averages (SMA 20 & SMA 50):</b> Plots the closing price alongside 20-day (short-term) and 50-day (medium-term) average lines to smooth out daily noise and show the overall direction.</li>
+            <li><b style="color: #22d3ee;">Bollinger Bands (Volatility Channels):</b> A shaded band two standard deviations above and below the 20-day average that widens when price swings pick up and narrows when price gets quiet.</li>
+            <li><b style="color: #22d3ee;">Daily Trading Volume Bar Chart:</b> Shows daily trading activity—big bars alongside price moves often signal stronger conviction behind a rally or pullback.</li>
+            <li><b style="color: #22d3ee;">30-Day Rolling Annualized Volatility Trend:</b> Tracks how bumpy the asset's swings have been over a rolling 30-day window so you can see calm vs. turbulent stretches over time.</li>
+            <li><b style="color: #22d3ee;">Daily Return Distribution Frequency:</b> Groups daily percentage gains and losses into bars to show how common small days are versus rare big jumps or drops.</li>
+            <li><b style="color: #22d3ee;">Multi-Asset Comparative Spread:</b> Starts every selected asset at 100 on day one so you can fairly compare percentage growth across expensive and low-priced assets side by side.</li>
+            <li><b style="color: #22d3ee;">Pairwise Return Correlation Matrix:</b> Shows a score from -1.00 to +1.00 for each pair of selected assets—values near +1.00 mean they tend to move up or down together, while lower values mean they move more independently.</li>
+        </ul>
+    </div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### 💡 Practical Real-World Applications")
+    st.markdown(
+        """
+    <div class="analytics-card">
+        <ul>
+            <li><b style="color: #22d3ee;">Rapid Daily Market Briefings:</b> Pick a focus asset (like AAPL or NVDA) and timeframe to quickly check recent price direction, distance from period highs/lows, and whether volume is unusually high or low.</li>
+            <li><b style="color: #22d3ee;">Relative Performance Benchmarking:</b> Open the Multi-Asset view to see which stocks or ETFs led or lagged on a common 100-point start line and check whether they move in lockstep.</li>
+            <li><b style="color: #22d3ee;">Regime & Volatility Tracking:</b> Watch the 30-day rolling volatility line and maximum drawdown to see when price swings or pullbacks are intensifying versus calming down.</li>
+        </ul>
+    </div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### 🔒 Data Governance, Compliance & Architecture")
+    st.markdown(
+        """
+    <div class="analytics-card">
+        <ul>
+            <li><b style="color: #22d3ee;">Data Sourcing & Reliability:</b> Pulls daily market history from Yahoo Finance endpoints (with fallback URLs) and checks that timestamps, prices, and rows are valid before plotting.</li>
+            <li><b style="color: #22d3ee;">Caching & Performance Optimization:</b> Saves fetched data for 15 minutes (<code>@st.cache_data(ttl=900)</code>) so switching views or tickers feels snappy and avoids repeated network calls.</li>
+            <li><b style="color: #22d3ee;">Resilient Error Handling:</b> Uses safe try-except blocks, empty-data checks, and missing-value cleanup so missing or tricky symbols fail gracefully instead of crashing the app.</li>
+            <li><b style="color: #22d3ee;">Transparency & Auditability:</b> Computes every metric using standard, straightforward math (percentage changes, averages, standard deviation, rolling highs) so anyone can verify how a number was produced.</li>
+        </ul>
+    </div>
+""",
+        unsafe_allow_html=True,
+    )
