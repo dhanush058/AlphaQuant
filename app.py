@@ -842,6 +842,20 @@ elif nav_choice == "📖 Analytics Guide & Overview":
         unsafe_allow_html=True,
     )
 
+    st.markdown("### 🚀 Real-World Applications")
+    st.markdown(
+        """
+    <div class="analytics-card">
+        <ul>
+            <li><b style="color: #22d3ee;">Trend & Entry/Exit Context Screening:</b> Check whether an equity, index ETF, or crypto pair is trading above or below its 20-day and 50-day moving averages and where it sits inside its Bollinger Band channel and period high-low range before researching further.</li>
+            <li><b style="color: #22d3ee;">Volatility & Downside Risk Sizing:</b> Compare annualized volatility, 30-day rolling volatility trends, return histograms, and maximum drawdown across windows (<code>1mo</code> to <code>2y</code>) to gauge how much turbulence a position can bring.</li>
+            <li><b style="color: #22d3ee;">Relative Strength & Diversification Checks:</b> Put 2 to 6 assets on a common <code>Base = 100</code> chart and inspect pairwise correlations to see which tickers led or lagged and how closely they move together, then export the underlying series to CSV for deeper modeling.</li>
+        </ul>
+    </div>
+""",
+        unsafe_allow_html=True,
+    )
+
     st.markdown("### 🛡️ Data Governance, Caching & Limitations")
     st.markdown(
         """
