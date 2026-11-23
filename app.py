@@ -815,7 +815,41 @@ elif nav_choice == "📖 Analytics Guide & Overview":
             <li><b style="color: #22d3ee;">Period High / Low:</b> The highest and lowest prices reached during your chosen timeframe (such as 6mo or 1y), and how far today's price is from that peak or bottom.</li>
             <li><b style="color: #22d3ee;">Latest Volume:</b> How many shares or units traded in the most recent session, compared against the 20-day average so you can spot unusually quiet or busy trading days.</li>
             <li><b style="color: #22d3ee;">Annualized Volatility (Risk):</b> How much the asset's daily returns bounce around, scaled to a full year—higher numbers mean bigger, choppier price swings.</li>
-            <li><b style="color: #22d3ee;">Cumulative Period Return:</b> Total percentage gain or loss from the start of your selected timeframe to the latest close, alongside how it compares to target.</li>
+            <li><b style="color: #22d3ee;">Cumulative Period Return:</b> Total percentage gain or loss from the start of your selected timeframe to the latest close, alongside how it compares to an illustrative 8% annual benchmark scaled to your selected window.</li>
+            <li><b style="color: #22d3ee;">Daily Mean Return:</b> The average percentage gain or loss per trading day across the selected window.</li>
+            <li><b style="color: #22d3ee;">Sharpe Ratio (Rf = 0%):</b> A return-per-unit-of-risk score (assuming a 0% risk-free rate) that helps show whether returns are coming with reasonable stability or heavy swings.</li>
+            <li><b style="color: #22d3ee;">Maximum Drawdown:</b> The steepest drop from a peak to a subsequent low during the chosen timeframe, showing the worst pullback an investor would have experienced over that period.</li>
+        </ul>
+    </div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### 📊 Charts & Analytical Views Explained")
+    st.markdown(
+        """
+    <div class="analytics-card">
+        <ul>
+            <li><b style="color: #22d3ee;">Price Action, Moving Averages & Bollinger Bands:</b> Shows the closing price alongside 20-day and 50-day moving averages (which smooth out daily noise to highlight trend direction) and Bollinger Bands (an upper and lower channel two standard deviations around the 20-day average that widens when swings pick up and tightens when price calms down).</li>
+            <li><b style="color: #22d3ee;">Daily Trading Volume Breakdown:</b> Displays daily share or unit volume using readable shorthand (<code>K</code>, <code>M</code>, <code>B</code>) so you can see whether price moves had strong market participation behind them.</li>
+            <li><b style="color: #22d3ee;">30-Day Rolling Annualized Volatility Trend:</b> Tracks how annualized volatility shifts over time so you can spot calm stretches versus high-turbulence periods.</li>
+            <li><b style="color: #22d3ee;">Daily Return Distribution Frequency:</b> Groups daily percentage returns into a histogram to show how often small everyday moves happen versus rare sharp jumps or drops.</li>
+            <li><b style="color: #22d3ee;">Normalized Multi-Asset Comparison (Base = 100):</b> Sets 2 to 6 selected assets to a starting value of <code>100</code> on shared dates so stocks, index ETFs, and crypto pairs with very different price tags can be compared fairly on percentage growth.</li>
+            <li><b style="color: #22d3ee;">Pairwise Return Correlation Matrix:</b> Scores how similarly two assets move day to day from <code>-1.00</code> (opposite moves) to <code>+1.00</code> (moving in lockstep), helping spot overlap or diversification.</li>
+        </ul>
+    </div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### 🛡️ Data Handling, Caching & Limitations")
+    st.markdown(
+        """
+    <div class="analytics-card">
+        <ul>
+            <li><b style="color: #22d3ee;">Daily Data & 15-Minute Cache:</b> Market data is fetched from Yahoo Finance's daily (<code>1d</code>) chart endpoint with fallback handling and cached for 15 minutes (<code>ttl=900</code>) to keep navigation fast and avoid unnecessary repeat requests.</li>
+            <li><b style="color: #22d3ee;">Buffer-First Rolling Math:</b> Indicators are computed across a 2-year historical buffer first and then sliced to your selected window (<code>1mo</code>–<code>2y</code>) so moving averages and volatility lines stay consistent even on shorter views.</li>
+            <li><b style="color: #22d3ee;">Research & Analytics Scope:</b> This terminal is built for market exploration, risk diagnostics, and data export (CSV)—not real-time tick streaming, order execution, or personalized financial advice.</li>
         </ul>
     </div>
 """,
